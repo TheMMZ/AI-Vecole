@@ -1,19 +1,47 @@
+// ...existing code...
 import { FastifyInstance } from "fastify";
 import Item from "../models/Item";
+import User from "../models/User";
 import Content from "../models/Content";
 import path from "path";
 import { extractPdfText } from "../utils/pdfParse";
 import { generateQuestionsWithGroq } from "../utils/groq";
+import GeneratedOutput from "../models/GeneratedOutput";
 
 export default async function itemsRoutes(fastify: FastifyInstance) {
-  fastify.get("/api/items", async (req, reply) => {
-    const items = await Item.find().sort({ createdAt: -1 });
+  // List all teachers (for admin dropdowns)
+  fastify.get("/api/teachers", async (req: any, reply: any) => {
+    try {
+      const teachers = await User.find({ role: "teacher" }, { _id: 1, name: 1, email: 1 });
+      reply.send(teachers);
+    } catch (err) {
+      reply.status(500).send({ message: "Failed to fetch teachers" });
+    }
+  });
+
+  // List items: teachers see their own, admins see all
+  fastify.get("/api/items", async (req: any, reply: any) => {
+    const user = (req as any).user;
+    let query = {};
+    if (user?.role === "teacher") {
+      query = { teacherId: user._id };
+    }
+    const items = await Item.find(query).sort({ createdAt: -1 });
     reply.send(items);
   });
 
-  fastify.post("/api/items", async (req, reply) => {
+  // Create item: admin can assign teacher by name, teacher can only assign to self
+  fastify.post("/api/items", async (req: any, reply: any) => {
     try {
-      const item = new Item(req.body);
+      const user = (req as any).user;
+      let teacherId = user?._id;
+      const body = req.body as any;
+      if (user?.role === "admin" && body.teacherName) {
+        const teacher = await User.findOne({ name: body.teacherName, role: "teacher" });
+        if (!teacher) return reply.status(400).send({ message: "Teacher not found" });
+        teacherId = teacher._id;
+      }
+      const item = new Item({ ...body, teacherId });
       await item.save();
       reply.send(item);
     } catch (err) {
@@ -22,7 +50,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
   });
 
   // AI-powered item generation endpoint
-  fastify.post("/api/items/generate", async (req, reply) => {
+  fastify.post("/api/items/generate", async (req: any, reply: any) => {
     // Example: req.body = { contentId, bankId }
     const { contentId, bankId } = req.body as { contentId: string; bankId: string };
     // 1. Find the content document
@@ -30,8 +58,8 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     if (!contentDoc) {
       return reply.status(404).send({ message: "Content not found" });
     }
-  // 2. Get the absolute path to the PDF file (fix path)
-  const pdfPath = path.join(process.cwd(), "uploads", path.basename(contentDoc.fileUrl));
+    // 2. Get the absolute path to the PDF file (fix path)
+    const pdfPath = path.join(process.cwd(), "uploads", path.basename(contentDoc.fileUrl));
     // 3. Extract text from the PDF
     let pdfText = "";
     try {
@@ -40,38 +68,42 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ message: "Failed to extract PDF text" });
     }
     // 4. Send pdfText to GROQ API to generate questions
-    let generatedItems: any[] = [];
+    let generated: any = { raw: "", questions: [] };
     try {
-      generatedItems = await generateQuestionsWithGroq(pdfText);
+      generated = await generateQuestionsWithGroq(pdfText);
     } catch (err) {
       return reply.status(500).send({ message: "GROQ API error" });
     }
-    // 5. Insert generated items into DB, attaching bankId and contentId
+
+    // Save raw model output for auditing/debugging. If raw is empty, store an explanatory fallback
+    let generatedOutputDoc: any = null;
+    try {
+      const rawToSave = generated.raw && generated.raw.trim() ? generated.raw : "[NO_RAW_RETURNED] GROQ returned no content or an error occurred.";
+      generatedOutputDoc = await GeneratedOutput.create({ bankId, contentId, raw: rawToSave });
+    } catch (err) {
+      console.error("Failed to save generated raw output", err);
+    }
+    const generatedItems: any[] = generated.questions || [];
+    // 5. If no questions were produced, return an error with the GeneratedOutput id for debugging
+    if (!generatedItems.length) {
+      return reply.status(500).send({ message: "No questions generated", generatedOutputId: generatedOutputDoc?._id });
+    }
+    // Insert generated items into DB, attaching bankId and contentId
     const itemsToInsert = generatedItems.map(q => ({
       bankId,
       contentId,
+      generatedOutputId: generatedOutputDoc?._id,
       type: q.type,
       question: q.question,
       options: q.options || [],
       answer: q.answer,
       metadata: { difficulty: q.difficulty || "", tags: q.tags || [] }
     }));
-    console.log("[DEBUG] Items to insert:", itemsToInsert.slice(0, 3));
-    if (itemsToInsert.length === 0) {
-      console.error("[DEBUG] No items to insert. GROQ output:", generatedItems);
-      return reply.status(500).send({ message: "No items generated from GROQ." });
-    }
-    try {
-      const items = await Item.insertMany(itemsToInsert);
-      console.log("[DEBUG] Items inserted:", items.slice(0, 3));
-      reply.send(items);
-    } catch (err) {
-      console.error("[DEBUG] Error inserting items:", err);
-      return reply.status(500).send({ message: "Failed to insert items", error: err });
-    }
+    const items = await Item.insertMany(itemsToInsert);
+    reply.send({ items, generatedOutputId: generatedOutputDoc?._id });
   });
 
-  fastify.put("/api/items/:id", async (req, reply) => {
+  fastify.put("/api/items/:id", async (req: any, reply: any) => {
     try {
       const { id } = req.params as { id: string };
       const update = req.body as Partial<{ name: string; description: string }>;
@@ -83,7 +115,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.delete("/api/items/:id", async (req, reply) => {
+  fastify.delete("/api/items/:id", async (req: any, reply: any) => {
     try {
       const { id } = req.params as { id: string };
       const item = await Item.findByIdAndDelete(id);

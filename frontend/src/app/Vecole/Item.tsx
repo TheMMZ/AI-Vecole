@@ -5,8 +5,16 @@ import { motion } from "framer-motion";
 
 type Item = {
   _id: string;
-  name: string;
-  description: string;
+  question?: string;
+  options?: string[];
+  answer?: string;
+  metadata?: {
+    difficulty?: string;
+    tags?: string[];
+  };
+  // legacy/manual fields
+  name?: string;
+  description?: string;
   bankId: string;
   contentId: string;
   createdAt: string;
@@ -20,8 +28,10 @@ export default function ItemForm() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
+    question: "",
+    options: [""],
+    answer: "",
+    metadata: { difficulty: "", tags: [""] },
     bankId: "",
     contentId: ""
   });
@@ -31,7 +41,10 @@ export default function ItemForm() {
     const fetchItems = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:4000/api/items");
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:4000/api/items", {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        });
         const data = await response.json();
         if (response.ok) {
           setItems(data);
@@ -46,17 +59,35 @@ export default function ItemForm() {
       }
     };
     fetchItems();
-    fetch("http://localhost:4000/api/banks")
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:4000/api/banks", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    })
       .then(res => res.json())
       .then(data => setBanks(Array.isArray(data) ? data : []));
-    fetch("http://localhost:4000/api/content")
+    fetch("http://localhost:4000/api/content", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    })
       .then(res => res.json())
       .then(data => setContents(Array.isArray(data) ? data : []));
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "difficulty") {
+      setFormData(prev => ({ ...prev, metadata: { ...prev.metadata, difficulty: value } }));
+    } else if (name === "tags") {
+      setFormData(prev => ({ ...prev, metadata: { ...prev.metadata, tags: value.split(",").map(t => t.trim()) } }));
+    } else if (name.startsWith("option-")) {
+      const idx = parseInt(name.split("-")[1]);
+      setFormData(prev => {
+        const newOptions = [...prev.options];
+        newOptions[idx] = value;
+        return { ...prev, options: newOptions };
+      });
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,7 +101,14 @@ export default function ItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       };
-      const response = await fetch(url, fetchOptions);
+      const token = localStorage.getItem("token");
+      const response = await fetch(url, {
+        ...fetchOptions,
+        headers: {
+          ...(fetchOptions.headers || {}),
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+      });
       const data = await response.json();
       if (response.ok) {
         const refreshed = await fetch("http://localhost:4000/api/items");
@@ -90,8 +128,13 @@ export default function ItemForm() {
 
   const handleEdit = (item: Item) => {
     setFormData({
-      name: item.name,
-      description: item.description,
+      question: item.question || "",
+      options: item.options && item.options.length > 0 ? item.options : [""],
+      answer: item.answer || "",
+      metadata: {
+        difficulty: item.metadata?.difficulty || "",
+        tags: item.metadata?.tags || [""]
+      },
       bankId: item.bankId || "",
       contentId: item.contentId || ""
     });
@@ -102,7 +145,11 @@ export default function ItemForm() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/items/${id}`, { method: "DELETE" });
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:4000/api/items/${id}`, {
+        method: "DELETE",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      });
       if (response.ok) {
         const refreshed = await fetch("http://localhost:4000/api/items");
         const refreshedData = await refreshed.json();
@@ -120,7 +167,14 @@ export default function ItemForm() {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", description: "", bankId: "", contentId: "" });
+    setFormData({
+      question: "",
+      options: [""],
+      answer: "",
+      metadata: { difficulty: "", tags: [""] },
+      bankId: "",
+      contentId: ""
+    });
     setEditingId(null);
   };
 
@@ -137,18 +191,84 @@ export default function ItemForm() {
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Item Name <span className="text-red-500">*</span>
+            <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-1">
+              Question <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="question"
+              name="question"
+              value={formData.question}
               onChange={handleInputChange}
               required
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
-              placeholder="e.g., Algebra Worksheet"
+              placeholder="e.g., What is 2+2?"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Options <span className="text-red-500">*</span></label>
+            {formData.options.map((opt, idx) => (
+              <div key={idx} className="flex gap-2 mb-1">
+                <input
+                  type="text"
+                  name={`option-${idx}`}
+                  value={opt}
+                  onChange={handleInputChange}
+                  required
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
+                  placeholder={`Option ${idx + 1}`}
+                />
+                {formData.options.length > 1 && (
+                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, options: prev.options.filter((_, i) => i !== idx) }))} className="text-red-500 px-2">Remove</button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={() => setFormData(prev => ({ ...prev, options: [...prev.options, ""] }))} className="text-blue-600 mt-1">+ Add Option</button>
+          </div>
+          <div>
+            <label htmlFor="answer" className="block text-sm font-medium text-gray-700 mb-1">
+              Answer <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="answer"
+              name="answer"
+              value={formData.answer}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
+              placeholder="e.g., 4"
+            />
+          </div>
+          <div>
+            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
+              Difficulty
+            </label>
+            <select
+              id="difficulty"
+              name="difficulty"
+              value={formData.metadata.difficulty}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black"
+            >
+              <option value="">Select difficulty</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              id="tags"
+              name="tags"
+              value={formData.metadata.tags.join(", ")}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
+              placeholder="e.g., Math, Algebra"
             />
           </div>
           <div>
@@ -189,21 +309,7 @@ export default function ItemForm() {
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
-              placeholder="Brief description of this item..."
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
+           <div className="flex justify-end gap-3 pt-2">
             {editingId && (
               <button
                 type="button"
@@ -269,8 +375,30 @@ export default function ItemForm() {
                   className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-start"
                 >
                   <div>
-                    <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                    {item.description && (
+                    {/* Prefer AI-generated fields, fallback to manual */}
+                    <h3 className="font-bold text-lg text-gray-800">
+                      {item.question || item.name || "Untitled Item"}
+                    </h3>
+                    {item.options && item.options.length > 0 && (
+                      <ul className="list-disc ml-6 mt-1 text-gray-700">
+                        {item.options.map((opt, i) => (
+                          <li key={i}>{opt}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {item.answer && (
+                      <div className="mt-1 text-green-700 font-semibold">Answer: {item.answer}</div>
+                    )}
+                    {item.metadata && (
+                      <div className="mt-1 text-sm text-gray-500 flex gap-4">
+                        {item.metadata.difficulty && <span>Difficulty: {item.metadata.difficulty}</span>}
+                        {item.metadata.tags && item.metadata.tags.length > 0 && (
+                          <span>Tags: {item.metadata.tags.join(", ")}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Fallback for manual/legacy items */}
+                    {item.description && !item.question && (
                       <p className="text-gray-600 mt-1">{item.description}</p>
                     )}
                     <div className="flex gap-4 mt-2 text-sm text-gray-500">
