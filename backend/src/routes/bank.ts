@@ -1,18 +1,11 @@
 import { FastifyInstance } from "fastify";
 import Bank from "../models/Bank";
-import User from "../models/User";
 
 export default async function bankRoutes(fastify: FastifyInstance) {
   // List all banks
-  // List banks: teachers see their own, admins see all
   fastify.get("/api/banks", async (req, reply) => {
     try {
-      const user = (req as any).user;
-      let query = {};
-      if (user?.role === "teacher") {
-        query = { teacherId: user._id };
-      }
-      const banks = await Bank.find(query);
+      const banks = await Bank.find();
       reply.send(banks);
     } catch (err: any) {
       reply.code(500).send({ error: err.message });
@@ -32,26 +25,22 @@ export default async function bankRoutes(fastify: FastifyInstance) {
   });
 
   // Create bank
-  // Create bank: admin can assign teacher by name, teacher can only assign to self
   fastify.post("/api/banks", async (req, reply) => {
     try {
       const mongoose = require("mongoose");
-      const user = (req as any).user;
-      let teacherId = user?._id;
-      const body = req.body as any;
-      if (user?.role === "admin" && body.teacherName) {
-        const teacher = await User.findOne({ name: body.teacherName, role: "teacher" });
-        if (!teacher) return reply.code(400).send({ error: "Teacher not found" });
-        teacherId = teacher._id;
-      }
-      const { title, description, createdBy, gradeIds, standardIds } = body;
+      const { title, description, createdBy, gradeIds, standardIds } = req.body as {
+        title: string;
+        description?: string;
+        createdBy?: string;
+        gradeIds?: string[];
+        standardIds?: string[];
+      };
       const bank = new Bank({
         title,
         description,
         createdBy: createdBy ? new mongoose.Types.ObjectId(createdBy) : undefined,
-        teacherId,
-        gradeIds: gradeIds?.map((id: string) => new mongoose.Types.ObjectId(id)),
-        standardIds: standardIds?.map((id: string) => new mongoose.Types.ObjectId(id)),
+        gradeIds: gradeIds?.map(id => new mongoose.Types.ObjectId(id)),
+        standardIds: standardIds?.map(id => new mongoose.Types.ObjectId(id)),
       });
       await bank.save();
       reply.code(201).send(bank);

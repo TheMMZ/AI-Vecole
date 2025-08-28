@@ -1,7 +1,5 @@
-// ...existing code...
 import { FastifyInstance } from "fastify";
 import Item from "../models/Item";
-import User from "../models/User";
 import Content from "../models/Content";
 import path from "path";
 import { extractPdfText } from "../utils/pdfParse";
@@ -9,39 +7,14 @@ import { generateQuestionsWithGroq } from "../utils/groq";
 import GeneratedOutput from "../models/GeneratedOutput";
 
 export default async function itemsRoutes(fastify: FastifyInstance) {
-  // List all teachers (for admin dropdowns)
-  fastify.get("/api/teachers", async (req: any, reply: any) => {
-    try {
-      const teachers = await User.find({ role: "teacher" }, { _id: 1, name: 1, email: 1 });
-      reply.send(teachers);
-    } catch (err) {
-      reply.status(500).send({ message: "Failed to fetch teachers" });
-    }
-  });
-
-  // List items: teachers see their own, admins see all
-  fastify.get("/api/items", async (req: any, reply: any) => {
-    const user = (req as any).user;
-    let query = {};
-    if (user?.role === "teacher") {
-      query = { teacherId: user._id };
-    }
-    const items = await Item.find(query).sort({ createdAt: -1 });
+  fastify.get("/api/items", async (req, reply) => {
+    const items = await Item.find().sort({ createdAt: -1 });
     reply.send(items);
   });
 
-  // Create item: admin can assign teacher by name, teacher can only assign to self
-  fastify.post("/api/items", async (req: any, reply: any) => {
+  fastify.post("/api/items", async (req, reply) => {
     try {
-      const user = (req as any).user;
-      let teacherId = user?._id;
-      const body = req.body as any;
-      if (user?.role === "admin" && body.teacherName) {
-        const teacher = await User.findOne({ name: body.teacherName, role: "teacher" });
-        if (!teacher) return reply.status(400).send({ message: "Teacher not found" });
-        teacherId = teacher._id;
-      }
-      const item = new Item({ ...body, teacherId });
+      const item = new Item(req.body);
       await item.save();
       reply.send(item);
     } catch (err) {
@@ -50,7 +23,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
   });
 
   // AI-powered item generation endpoint
-  fastify.post("/api/items/generate", async (req: any, reply: any) => {
+  fastify.post("/api/items/generate", async (req, reply) => {
     // Example: req.body = { contentId, bankId }
     const { contentId, bankId } = req.body as { contentId: string; bankId: string };
     // 1. Find the content document
@@ -58,8 +31,8 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     if (!contentDoc) {
       return reply.status(404).send({ message: "Content not found" });
     }
-    // 2. Get the absolute path to the PDF file (fix path)
-    const pdfPath = path.join(process.cwd(), "uploads", path.basename(contentDoc.fileUrl));
+  // 2. Get the absolute path to the PDF file (fix path)
+  const pdfPath = path.join(process.cwd(), "uploads", path.basename(contentDoc.fileUrl));
     // 3. Extract text from the PDF
     let pdfText = "";
     try {
@@ -103,7 +76,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     reply.send({ items, generatedOutputId: generatedOutputDoc?._id });
   });
 
-  fastify.put("/api/items/:id", async (req: any, reply: any) => {
+  fastify.put("/api/items/:id", async (req, reply) => {
     try {
       const { id } = req.params as { id: string };
       const update = req.body as Partial<{ name: string; description: string }>;
@@ -115,7 +88,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.delete("/api/items/:id", async (req: any, reply: any) => {
+  fastify.delete("/api/items/:id", async (req, reply) => {
     try {
       const { id } = req.params as { id: string };
       const item = await Item.findByIdAndDelete(id);

@@ -41,10 +41,7 @@ export default function ItemForm() {
     const fetchItems = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:4000/api/items", {
-          headers: token ? { "Authorization": `Bearer ${token}` } : {},
-        });
+        const response = await fetch("http://localhost:4000/api/items");
         const data = await response.json();
         if (response.ok) {
           setItems(data);
@@ -59,15 +56,10 @@ export default function ItemForm() {
       }
     };
     fetchItems();
-    const token = localStorage.getItem("token");
-    fetch("http://localhost:4000/api/banks", {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    })
+    fetch("http://localhost:4000/api/banks")
       .then(res => res.json())
       .then(data => setBanks(Array.isArray(data) ? data : []));
-    fetch("http://localhost:4000/api/content", {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    })
+    fetch("http://localhost:4000/api/content")
       .then(res => res.json())
       .then(data => setContents(Array.isArray(data) ? data : []));
   }, []);
@@ -101,14 +93,7 @@ export default function ItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       };
-      const token = localStorage.getItem("token");
-      const response = await fetch(url, {
-        ...fetchOptions,
-        headers: {
-          ...(fetchOptions.headers || {}),
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-        },
-      });
+      const response = await fetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
         const refreshed = await fetch("http://localhost:4000/api/items");
@@ -145,11 +130,7 @@ export default function ItemForm() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:4000/api/items/${id}`, {
-        method: "DELETE",
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
-      });
+      const response = await fetch(`http://localhost:4000/api/items/${id}`, { method: "DELETE" });
       if (response.ok) {
         const refreshed = await fetch("http://localhost:4000/api/items");
         const refreshedData = await refreshed.json();
@@ -309,7 +290,21 @@ export default function ItemForm() {
               ))}
             </select>
           </div>
-           <div className="flex justify-end gap-3 pt-2">
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
+              placeholder="Brief description of this item..."
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
             {editingId && (
               <button
                 type="button"
