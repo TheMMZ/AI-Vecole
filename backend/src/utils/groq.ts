@@ -30,13 +30,15 @@ export async function generateQuestionsWithGroq(pdfText: string): Promise<GroqRe
   while (remaining > 0) {
     const thisChunk = Math.min(chunkSize, remaining);
     const chunkPrompt = `Generate ${thisChunk} exam questions (MCQ or True/False) from the following text. 
-      Return ONLY a valid JSON array. Do not include any text before or after the JSON. Do not add explanations, comments, or extra words. Each object must have:
+      Return ONLY a valid JSON array of at least 1 question object. Do not return empty arrays. Do not include any text before or after the JSON. Do not add explanations, comments, or extra words. Each object must have:
       - "type": "MCQ" or "TrueFalse"
       - "question": string
       - "options": array of strings (for TrueFalse, always ["True", "False"])
       - "answer": string (must be one of the options)
       - "difficulty": "easy" | "medium" | "hard"
       - "tags": array of strings
+
+      If you cannot generate any questions, return an array with a single object: {"type": "error", "question": "No questions could be generated.", "options": [], "answer": "", "difficulty": "", "tags": []}
 
       Do not include explanations or text outside the JSON.
 
@@ -60,6 +62,7 @@ export async function generateQuestionsWithGroq(pdfText: string): Promise<GroqRe
         }
       );
       let content = response.data.choices[0].message.content;
+      console.log("[GROQ] Raw model response:", content);
       rawAccum += content + "\n";
       // --- Robust JSON extraction logic ---
       let extracted = "";
@@ -67,23 +70,24 @@ export async function generateQuestionsWithGroq(pdfText: string): Promise<GroqRe
       const lastBracket = content.lastIndexOf("]");
       if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
         extracted = content.substring(firstBracket, lastBracket + 1);
-        console.log("Extracted JSON array from first '[' to last ']'");
+        console.log("[GROQ] Extracted JSON array from first '[' to last ']':", extracted);
       } else {
         // fallback: try to extract from code block or use full content
         let jsonMatch = content.match(/```json([\s\S]*?)```/i) || content.match(/```([\s\S]*?)```/i);
         if (jsonMatch) {
           extracted = jsonMatch[1];
-          console.log("Extracted JSON from code block");
+          console.log("[GROQ] Extracted JSON from code block:", extracted);
         } else {
           extracted = content;
-          console.log("No brackets found, using full content");
+          console.log("[GROQ] No brackets found, using full content:", extracted);
         }
       }
       let questions: GroqQuestion[] = [];
       try {
         questions = JSON.parse(extracted);
+        console.log("[GROQ] Parsed questions:", questions);
       } catch (jsonErr) {
-        console.error("GROQ did not return valid JSON. Extraction attempt:", extracted);
+        console.error("[GROQ] Did not return valid JSON. Extraction attempt:", extracted);
         // Optionally, save the extracted string for debugging
         rawAccum += `\n[[EXTRACTED_JSON_ATTEMPT]]\n${extracted}\n`;
         break;

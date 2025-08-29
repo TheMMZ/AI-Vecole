@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 
 type Item = {
@@ -22,6 +22,48 @@ type Item = {
 };
 
 export default function ItemForm() {
+  // Delete all items for a bankId (all contents)
+  const handleDeleteBank = async (bankId: string) => {
+    if (!confirm("Are you sure you want to delete all questions for this bank? This will remove all items in all contents under this bank.")) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:4000/api/items?bankId=${bankId}`, { method: "DELETE" });
+      if (response.ok) {
+        const refreshed = await fetch("http://localhost:4000/api/items");
+        const refreshedData = await refreshed.json();
+        setItems(refreshedData);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to delete items");
+      }
+    } catch (err) {
+      setError("Network error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  // Delete all items for a contentId
+  const handleDeleteContent = async (contentId: string) => {
+    if (!confirm("Are you sure you want to delete all questions for this content?")) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:4000/api/items?contentId=${contentId}`, { method: "DELETE" });
+      if (response.ok) {
+        const refreshed = await fetch("http://localhost:4000/api/items");
+        const refreshedData = await refreshed.json();
+        setItems(refreshedData);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to delete items");
+      }
+    } catch (err) {
+      setError("Network error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const [items, setItems] = useState<Item[]>([]);
   const [banks, setBanks] = useState<{_id: string; title: string}[]>([]);
   const [contents, setContents] = useState<{_id: string; title?: string; filename?: string}[]>([]);
@@ -31,11 +73,37 @@ export default function ItemForm() {
     question: "",
     options: [""],
     answer: "",
+    description: "",
     metadata: { difficulty: "", tags: [""] },
     bankId: "",
     contentId: ""
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedBanks, setExpandedBanks] = useState<Set<string>>(new Set());
+  const [expandedContents, setExpandedContents] = useState<Set<string>>(new Set());
+  const [expandedItemsSet, setExpandedItemsSet] = useState<Set<string>>(new Set());
+
+  const toggleBank = (id: string) => {
+    setExpandedBanks(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  };
+  const toggleContent = (id: string) => {
+    setExpandedContents(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  };
+  const toggleItem = (id: string) => {
+    setExpandedItemsSet(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  };
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -64,6 +132,20 @@ export default function ItemForm() {
       .then(data => setContents(Array.isArray(data) ? data : []));
   }, []);
 
+  const grouped = useMemo(() => {
+    // bankId -> contentId -> items[]
+    const map = new Map<string, Map<string, Item[]>>();
+    items.forEach(it => {
+      const b = it.bankId || "_no_bank";
+      const c = it.contentId || "_no_content";
+      if (!map.has(b)) map.set(b, new Map());
+      const cm = map.get(b)!;
+      if (!cm.has(c)) cm.set(c, []);
+      cm.get(c)!.push(it);
+    });
+    return map;
+  }, [items]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "difficulty") {
@@ -77,6 +159,8 @@ export default function ItemForm() {
         newOptions[idx] = value;
         return { ...prev, options: newOptions };
       });
+    } else if (name === "description") {
+      setFormData(prev => ({ ...prev, description: value }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -116,6 +200,7 @@ export default function ItemForm() {
       question: item.question || "",
       options: item.options && item.options.length > 0 ? item.options : [""],
       answer: item.answer || "",
+      description: item.description || "",
       metadata: {
         difficulty: item.metadata?.difficulty || "",
         tags: item.metadata?.tags || [""]
@@ -152,6 +237,7 @@ export default function ItemForm() {
       question: "",
       options: [""],
       answer: "",
+      description: "",
       metadata: { difficulty: "", tags: [""] },
       bankId: "",
       contentId: ""
@@ -364,65 +450,94 @@ export default function ItemForm() {
             </div>
           ) : (
             <div className="space-y-4">
-              {items.map(item => (
-                <div
-                  key={item._id}
-                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-start"
-                >
-                  <div>
-                    {/* Prefer AI-generated fields, fallback to manual */}
-                    <h3 className="font-bold text-lg text-gray-800">
-                      {item.question || item.name || "Untitled Item"}
-                    </h3>
-                    {item.options && item.options.length > 0 && (
-                      <ul className="list-disc ml-6 mt-1 text-gray-700">
-                        {item.options.map((opt, i) => (
-                          <li key={i}>{opt}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {item.answer && (
-                      <div className="mt-1 text-green-700 font-semibold">Answer: {item.answer}</div>
-                    )}
-                    {item.metadata && (
-                      <div className="mt-1 text-sm text-gray-500 flex gap-4">
-                        {item.metadata.difficulty && <span>Difficulty: {item.metadata.difficulty}</span>}
-                        {item.metadata.tags && item.metadata.tags.length > 0 && (
-                          <span>Tags: {item.metadata.tags.join(", ")}</span>
-                        )}
+              {Array.from(grouped.entries()).map(([bankId, contentsMap]) => {
+                const bank = banks.find(b => b._id === bankId);
+                const bankTitle = bank ? bank.title : (bankId === "_no_bank" ? "No Bank" : bankId);
+                const bankExpanded = expandedBanks.has(bankId);
+                return (
+                  <div key={bankId} className={`border rounded-lg p-4 bg-gray-50 cursor-pointer select-none`} onClick={() => toggleBank(bankId)}>
+                    <div className="flex justify-between items-center">
+                      <div className="font-semibold text-lg text-black">{bankTitle}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-black text-sm">{bankExpanded ? "▲" : "▼"}</span>
+                        <button
+                          className="ml-2 p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors"
+                          title="Delete all questions in this bank"
+                          onClick={e => { e.stopPropagation(); handleDeleteBank(bankId); }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    {bankExpanded && (
+                      <div className="mt-3 space-y-3">
+                        {Array.from(contentsMap.entries()).map(([contentId, itemsArr]) => {
+                          const content = contents.find(c => c._id === contentId);
+                          const contentTitle = content ? (content.title || content.filename || 'Untitled Content') : (contentId === "_no_content" ? "No Content" : contentId);
+                          const contentExpanded = expandedContents.has(contentId);
+                          return (
+                            <div key={contentId} className={`border rounded-md p-3 bg-white cursor-pointer select-none`} onClick={e => { e.stopPropagation(); toggleContent(contentId); }}>
+                              <div className="flex justify-between items-center">
+                                <div className="font-medium text-black">{contentTitle} <span className="text-sm text-black">({itemsArr.length})</span></div>
+                                <div className="flex gap-2 items-center">
+                                  <span className="text-black text-sm">{contentExpanded ? "▲" : "▼"}</span>
+                                  <button
+                                    className="ml-2 p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors"
+                                    title="Delete all questions in this content"
+                                    onClick={e => { e.stopPropagation(); handleDeleteContent(contentId); }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                              {contentExpanded && (
+                                <div className="mt-2 space-y-2">
+                                  {itemsArr.map(it => (
+                                    <div key={it._id} className={`p-3 rounded-md border hover:shadow-sm cursor-pointer select-none`} onClick={e => { e.stopPropagation(); toggleItem(it._id); }}>
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <div className="font-semibold text-black">{it.question || it.name || 'Untitled'}</div>
+                                          <div className="text-sm text-black mt-1">{it.metadata?.difficulty ? `Difficulty: ${it.metadata.difficulty}` : ''} {it.metadata?.tags?.length ? `• Tags: ${it.metadata.tags.join(', ')}` : ''}</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <button onClick={e => { e.stopPropagation(); handleEdit(it); }} className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors" title="Edit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                          </button>
+                                          <button onClick={e => { e.stopPropagation(); handleDelete(it._id); }} className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors" title="Delete">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {expandedItemsSet.has(it._id) && (
+                                        <div className="mt-2 text-sm text-black">
+                                          {it.options && it.options.length > 0 && (
+                                            <ul className="list-disc ml-6">
+                                              {it.options.map((o, i) => <li key={i}>{o}</li>)}
+                                            </ul>
+                                          )}
+                                          {it.answer && <div className="mt-2 text-green-700 font-semibold">Answer: {it.answer}</div>}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                    {/* Fallback for manual/legacy items */}
-                    {item.description && !item.question && (
-                      <p className="text-gray-600 mt-1">{item.description}</p>
-                    )}
-                    <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                      <span>Created: {new Date(item.createdAt).toLocaleDateString()}</span>
-                      <span>Updated: {new Date(item.updatedAt).toLocaleDateString()}</span>
-                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors"
-                      title="Edit"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors"
-                      title="Delete"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

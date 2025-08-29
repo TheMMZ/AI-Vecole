@@ -7,6 +7,23 @@ import { generateQuestionsWithGroq } from "../utils/groq";
 import GeneratedOutput from "../models/GeneratedOutput";
 
 export default async function itemsRoutes(fastify: FastifyInstance) {
+
+  // Batch delete by contentId or bankId
+  fastify.delete("/api/items", async (req, reply) => {
+    const { contentId, bankId } = req.query as { contentId?: string; bankId?: string };
+    if (!contentId && !bankId) {
+      return reply.status(400).send({ message: "contentId or bankId query param required" });
+    }
+    let filter: any = {};
+    if (contentId) filter.contentId = contentId;
+    if (bankId) filter.bankId = bankId;
+    try {
+      const result = await Item.deleteMany(filter);
+      reply.send({ success: true, deletedCount: result.deletedCount });
+    } catch (err) {
+      reply.status(500).send({ message: "Failed to delete items" });
+    }
+  });
   fastify.get("/api/items", async (req, reply) => {
     const items = await Item.find().sort({ createdAt: -1 });
     reply.send(items);
@@ -37,7 +54,12 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     let pdfText = "";
     try {
       pdfText = await extractPdfText(pdfPath);
+      console.log("[PDF EXTRACTION] First 500 chars:", pdfText.slice(0, 500));
+      if (!pdfText.trim()) {
+        console.warn("[PDF EXTRACTION] No text extracted from PDF:", pdfPath);
+      }
     } catch (err) {
+      console.error("[PDF EXTRACTION] Error extracting text:", err);
       return reply.status(500).send({ message: "Failed to extract PDF text" });
     }
     // 4. Send pdfText to GROQ API to generate questions
