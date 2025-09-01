@@ -1,86 +1,20 @@
 import { FastifyInstance } from "fastify";
-import Bank from "../models/Bank";
+
+import { getAllBanks, getBankById, createBank, updateBank, deleteBank } from "../controllers/bankController";
 
 export default async function bankRoutes(fastify: FastifyInstance) {
   // List all banks
-  fastify.get("/api/banks", async (req, reply) => {
-    try {
-      const banks = await Bank.find();
-      reply.send(banks);
-    } catch (err: any) {
-      reply.code(500).send({ error: err.message });
-    }
-  });
+  fastify.get("/api/banks", getAllBanks);
 
   // Get bank by ID
-  fastify.get("/api/banks/:id", async (req, reply) => {
-    try {
-      // @ts-ignore
-      const bank = await Bank.findById(req.params.id);
-      if (!bank) return reply.code(404).send({ error: "Bank not found" });
-      reply.send(bank);
-    } catch (err: any) {
-      reply.code(500).send({ error: err.message });
-    }
-  });
+  fastify.get("/api/banks/:id", getBankById);
 
   // Create bank
-  fastify.post("/api/banks", async (req, reply) => {
-    try {
-      const mongoose = require("mongoose");
-      const { title, description, createdBy, gradeIds, standardIds } = req.body as {
-        title: string;
-        description?: string;
-        createdBy?: string;
-        gradeIds?: string[];
-        standardIds?: string[];
-      };
-      const bank = new Bank({
-        title,
-        description,
-        createdBy: createdBy ? new mongoose.Types.ObjectId(createdBy) : undefined,
-        gradeIds: gradeIds?.map(id => new mongoose.Types.ObjectId(id)),
-        standardIds: standardIds?.map(id => new mongoose.Types.ObjectId(id)),
-      });
-      await bank.save();
-      reply.code(201).send(bank);
-    } catch (err: any) {
-      reply.code(400).send({ error: err.message });
-    }
-  });
+  fastify.post("/api/banks", createBank);
 
   // Update bank
-  fastify.put("/api/banks/:id", async (req, reply) => {
-    try {
-      const { title, description, createdBy, gradeIds, standardIds } = req.body as {
-        title: string;
-        description?: string;
-        createdBy?: string;
-        gradeIds?: string[];
-        standardIds?: string[];
-      };
-      const { id } = req.params as { id: string };
-      const bank = await Bank.findByIdAndUpdate(
-        id,
-        { title, description, createdBy, gradeIds, standardIds },
-        { new: true }
-      );
-      if (!bank) return reply.code(404).send({ error: "Bank not found" });
-      reply.send(bank);
-    } catch (err: any) {
-      reply.code(400).send({ error: err.message });
-    }
-  });
+  fastify.put("/api/banks/:id", updateBank);
 
   // Delete bank
-  fastify.delete("/api/banks/:id", async (req, reply) => {
-    try {
-      // @ts-ignore
-      const bank = await Bank.findByIdAndDelete(req.params.id);
-      if (!bank) return reply.code(404).send({ error: "Bank not found" });
-      reply.send({ message: "Bank deleted" });
-    } catch (err: any) {
-      reply.code(500).send({ error: err.message });
-    }
-  });
+  fastify.delete("/api/banks/:id", deleteBank);
 }

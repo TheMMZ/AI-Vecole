@@ -22,7 +22,7 @@ export default function AppHeader({ onNavigate }: AppHeaderProps) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    localStorage.clear();
     window.location.href = "/";
   };
 

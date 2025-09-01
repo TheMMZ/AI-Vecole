@@ -1,18 +1,16 @@
-import express, { Request, Response } from "express";
 import Standard from "../models/Standard";
+import { Request, Response } from "express";
 
-const router = express.Router();
-
-router.get("/", async (req: Request, res: Response) => {
+export async function getAllStandards(req: Request, res: Response) {
   try {
     const standards = await Standard.find();
     res.json(standards);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-});
+}
 
-router.get("/:id", async (req: Request, res: Response) => {
+export async function getStandardById(req: Request, res: Response) {
   try {
     const standard = await Standard.findById(req.params.id);
     if (!standard) return res.status(404).json({ error: "Standard not found" });
@@ -20,9 +18,9 @@ router.get("/:id", async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-});
+}
 
-router.post("/", async (req: Request, res: Response) => {
+export async function createStandard(req: Request, res: Response) {
   try {
     const standard = new Standard(req.body);
     await standard.save();
@@ -30,9 +28,9 @@ router.post("/", async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
-});
+}
 
-router.put("/:id", async (req: Request, res: Response) => {
+export async function updateStandard(req: Request, res: Response) {
   try {
     const standard = await Standard.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!standard) return res.status(404).json({ error: "Standard not found" });
@@ -40,16 +38,14 @@ router.put("/:id", async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
-});
+}
 
-router.delete("/:id", async (req: Request, res: Response) => {
+export async function deleteStandard(req: Request, res: Response) {
   try {
     const standard = await Standard.findByIdAndDelete(req.params.id);
     if (!standard) return res.status(404).json({ error: "Standard not found" });
     res.json({ message: "Standard deleted" });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
-});
-
-export default router;
+}

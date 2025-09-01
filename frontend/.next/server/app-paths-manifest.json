@@ -1,5 +1,6 @@
 {
-  "/AuthCard/page": "app/AuthCard/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
   "/Vecole/page": "app/Vecole/page.js",
-  "/page": "app/page.js"
+  "/AuthCard/page": "app/AuthCard/page.js"
 }

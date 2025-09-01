@@ -43,6 +43,7 @@ export default async function authRoutes(fastify: FastifyInstance, db: Db) {
     return {
       token: createToken(user._id.toString()),
       user: {
+        _id: user._id,
         username: user.username,
         email: user.email,
         role: user.role
