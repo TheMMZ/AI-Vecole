@@ -66,11 +66,13 @@ export default function BankForm() {
     description: string;
     gradeIds: string[];
     standardIds: string[];
+    createdBy?: string;
   }>({
     title: "",
     description: "",
     gradeIds: [],
     standardIds: [],
+    createdBy: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
