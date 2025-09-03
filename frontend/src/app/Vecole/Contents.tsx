@@ -26,7 +26,13 @@ export default function Contents() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:4000/api/content");
+      const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+      let url = "http://localhost:4000/api/content";
+      if (role && userId) {
+        url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (res.ok) {
         setFiles(data);
@@ -62,12 +68,15 @@ export default function Contents() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("title", fileTitle);
-      
+      // Add uploadedBy from localStorage (userId)
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+      if (userId) {
+        formData.append("uploadedBy", userId);
+      }
       const res = await fetch("http://localhost:4000/api/content/upload", {
         method: "POST",
         body: formData,
       });
-      
       const data = await res.json();
       if (res.ok) {
         fetchFiles();

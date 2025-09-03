@@ -3,7 +3,13 @@ import { Request, Response } from "express";
 
 export async function getAllItems(req: Request, res: Response) {
   try {
-    const items = await Item.find();
+    const { role, userId } = req.query as { role?: string; userId?: string };
+    let filter = {};
+    if (role === "teacher" && userId) {
+      const mongoose = require("mongoose");
+      filter = { createdBy: new mongoose.Types.ObjectId(userId) };
+    }
+    const items = await Item.find(filter);
     res.json(items);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -22,7 +28,19 @@ export async function getItemById(req: Request, res: Response) {
 
 export async function createItem(req: Request, res: Response) {
   try {
-    const item = new Item(req.body);
+    const mongoose = require("mongoose");
+    const { bankId, contentId, generatedOutputId, createdBy, type, question, options, answer, metadata } = req.body;
+    const item = new Item({
+      bankId,
+      contentId,
+      generatedOutputId,
+      createdBy: createdBy ? new mongoose.Types.ObjectId(createdBy) : undefined,
+      type,
+      question,
+      options,
+      answer,
+      metadata
+    });
     await item.save();
     res.status(201).json(item);
   } catch (err: any) {

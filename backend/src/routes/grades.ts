@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { getAllGrades, createGrade, updateGrade, deleteGrade } from "../controllers/gradeController";
+import { getAllGrades, createGrade, updateGrade, deleteGrade } from "../controllers/grade";
 
 export default async function gradesRoutes(fastify: FastifyInstance) {
   fastify.get("/api/grades", getAllGrades);

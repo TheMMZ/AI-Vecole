@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 
-import { getAllBanks, getBankById, createBank, updateBank, deleteBank } from "../controllers/bankController";
+import { getAllBanks, getBankById, createBank, updateBank, deleteBank } from "../controllers/bank";
 
 export default async function bankRoutes(fastify: FastifyInstance) {
   // List all banks

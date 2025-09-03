@@ -3,7 +3,14 @@ import { FastifyReply, FastifyRequest } from "fastify";
 
 export async function getAllBanks(req: FastifyRequest, reply: FastifyReply) {
   try {
-    const banks = await Bank.find();
+    // @ts-ignore
+    const { role, userId } = req.query as { role?: string; userId?: string };
+    let filter = {};
+    if (role === "teacher" && userId) {
+      const mongoose = require("mongoose");
+      filter = { createdBy: new mongoose.Types.ObjectId(userId) };
+    }
+    const banks = await Bank.find(filter);
     reply.send(banks);
   } catch (err: any) {
     reply.code(500).send({ error: err.message });

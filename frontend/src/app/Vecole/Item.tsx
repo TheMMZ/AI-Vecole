@@ -17,6 +17,7 @@ type Item = {
   description?: string;
   bankId: string;
   contentId: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -76,7 +77,8 @@ export default function ItemForm() {
     description: "",
     metadata: { difficulty: "", tags: [""] },
     bankId: "",
-    contentId: ""
+    contentId: "",
+    createdBy: ""
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedBanks, setExpandedBanks] = useState<Set<string>>(new Set());
@@ -106,30 +108,50 @@ export default function ItemForm() {
   };
 
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchAll = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:4000/api/items");
-        const data = await response.json();
-        if (response.ok) {
-          setItems(data);
+        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        // Fetch items
+        let itemsUrl = "http://localhost:4000/api/items";
+        if (role && userId) {
+          itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+        }
+        const itemsRes = await fetch(itemsUrl);
+        const itemsData = await itemsRes.json();
+        if (itemsRes.ok) {
+          setItems(itemsData);
         } else {
-          setError(data.message || "Failed to fetch items");
+          setError(itemsData.message || "Failed to fetch items");
+        }
+        // Fetch banks
+        let banksUrl = "http://localhost:4000/api/banks";
+        if (role && userId) {
+          banksUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+        }
+        const banksRes = await fetch(banksUrl);
+        const banksData = await banksRes.json();
+        if (banksRes.ok) {
+          setBanks(banksData);
+        }
+        // Fetch contents
+        let contentsUrl = "http://localhost:4000/api/content";
+        if (role && userId) {
+          contentsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+        }
+        const contentsRes = await fetch(contentsUrl);
+        const contentsData = await contentsRes.json();
+        if (contentsRes.ok) {
+          setContents(contentsData);
         }
       } catch (err) {
-        console.error("Network error occurred", err);
         setError("Network error occurred");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchItems();
-    fetch("http://localhost:4000/api/banks")
-      .then(res => res.json())
-      .then(data => setBanks(Array.isArray(data) ? data : []));
-    fetch("http://localhost:4000/api/content")
-      .then(res => res.json())
-      .then(data => setContents(Array.isArray(data) ? data : []));
+    fetchAll();
   }, []);
 
   const grouped = useMemo(() => {
@@ -172,10 +194,23 @@ export default function ItemForm() {
       setIsLoading(true);
       const url = editingId ? `http://localhost:4000/api/items/${editingId}` : "http://localhost:4000/api/items";
       const method = editingId ? "PUT" : "POST";
+      let dataToSend = { ...formData };
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+      if (editingId) {
+        // If editing, keep the existing createdBy
+        if (!dataToSend.createdBy && userId) {
+          dataToSend.createdBy = userId;
+        }
+      } else {
+        // If creating, set createdBy from localStorage
+        if (userId) {
+          dataToSend.createdBy = userId;
+        }
+      }
       const fetchOptions: RequestInit = {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       };
       const response = await fetch(url, fetchOptions);
       const data = await response.json();
@@ -206,7 +241,8 @@ export default function ItemForm() {
         tags: item.metadata?.tags || [""]
       },
       bankId: item.bankId || "",
-      contentId: item.contentId || ""
+      contentId: item.contentId || "",
+      createdBy: item.createdBy || ""
     });
     setEditingId(item._id);
   };
@@ -240,7 +276,8 @@ export default function ItemForm() {
       description: "",
       metadata: { difficulty: "", tags: [""] },
       bankId: "",
-      contentId: ""
+      contentId: "",
+      createdBy: ""
     });
     setEditingId(null);
   };
@@ -457,7 +494,7 @@ export default function ItemForm() {
                 return (
                   <div key={bankId} className={`border rounded-lg p-4 bg-gray-50 cursor-pointer select-none`} onClick={() => toggleBank(bankId)}>
                     <div className="flex justify-between items-center">
-                      <div className="font-semibold text-lg text-black">{bankTitle}</div>
+                      <div className="font-semibold text-lg text-black">🏦 {bankTitle}</div>
                       <div className="flex items-center gap-2">
                         <span className="text-black text-sm">{bankExpanded ? "▲" : "▼"}</span>
                         <button
@@ -480,7 +517,7 @@ export default function ItemForm() {
                           return (
                             <div key={contentId} className={`border rounded-md p-3 bg-white cursor-pointer select-none`} onClick={e => { e.stopPropagation(); toggleContent(contentId); }}>
                               <div className="flex justify-between items-center">
-                                <div className="font-medium text-black">{contentTitle} <span className="text-sm text-black">({itemsArr.length})</span></div>
+                                <div className="font-medium text-black">📄 {contentTitle} <span className="text-sm text-black">({itemsArr.length})</span></div>
                                 <div className="flex gap-2 items-center">
                                   <span className="text-black text-sm">{contentExpanded ? "▲" : "▼"}</span>
                                   <button

@@ -11,7 +11,16 @@ async function contentRoutes(fastify: FastifyInstance) {
   fastify.register(fastifyMultipart);
 
   fastify.get("/api/content", async (req, reply) => {
-    const files = await Content.find().sort({ createdAt: -1 });
+    const { role, userId } = req.query as { role?: string; userId?: string };
+    let filter = {};
+    if (role === "teacher" && userId) {
+      try {
+        filter = { uploadedBy: new mongoose.Types.ObjectId(userId) };
+      } catch {
+        filter = { uploadedBy: userId };
+      }
+    }
+    const files = await Content.find(filter).sort({ createdAt: -1 });
     reply.send(files.map(f => ({
       _id: f._id,
       filename: f.title,
@@ -34,8 +43,17 @@ async function contentRoutes(fastify: FastifyInstance) {
     const fileUrl = `/uploads/${filename}`;
     // Get title from form field if provided
     const title = (data.fields && data.fields.title && data.fields.title.value) || filename;
-    // TODO: get user from auth (for now, use a dummy user)
-    const uploadedBy = new mongoose.Types.ObjectId();
+    // Use uploadedBy from form field if present, else fallback to dummy ObjectId
+    let uploadedBy = undefined;
+    if (data.fields && data.fields.uploadedBy && data.fields.uploadedBy.value) {
+      try {
+        uploadedBy = new mongoose.Types.ObjectId(data.fields.uploadedBy.value);
+      } catch {
+        uploadedBy = new mongoose.Types.ObjectId(); // fallback if invalid
+      }
+    } else {
+      uploadedBy = new mongoose.Types.ObjectId();
+    }
     const content = new Content({ title, fileUrl, uploadedBy });
     await content.save();
     reply.send({

@@ -29,7 +29,7 @@ export async function generateQuestionsWithGroq(pdfText: string): Promise<GroqRe
 
   while (remaining > 0) {
     const thisChunk = Math.min(chunkSize, remaining);
-    const chunkPrompt = `Generate ${thisChunk} exam questions (MCQ or True/False) from the following text. 
+    const chunkPrompt = `Generate ${thisChunk} exam questions (MCQ or True/False) from the following text: ${pdfText}. 
       Return ONLY a valid JSON array of at least 1 question object. Do not return empty arrays. Do not include any text before or after the JSON. Do not add explanations, comments, or extra words. Each object must have:
       - "type": "MCQ" or "TrueFalse"
       - "question": string
@@ -40,10 +40,7 @@ export async function generateQuestionsWithGroq(pdfText: string): Promise<GroqRe
 
       If you cannot generate any questions, return an array with a single object: {"type": "error", "question": "No questions could be generated.", "options": [], "answer": "", "difficulty": "", "tags": []}
 
-      Do not include explanations or text outside the JSON.
-
-      Text:
-      ${pdfText}`;
+      Do not include explanations or text outside the JSON.`;
     try {
       const response = await axios.post(
         GROQ_API_URL,

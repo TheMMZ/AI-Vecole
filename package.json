@@ -6,6 +6,7 @@
     "@types/mongoose": "^5.11.96",
     "express": "^5.1.0",
     "fastify-multer": "^2.0.3",
+    "groq-sdk": "^0.31.0",
     "mongoose": "^8.17.0",
     "multer": "^2.0.2",
     "pdf-parse": "^1.1.1"

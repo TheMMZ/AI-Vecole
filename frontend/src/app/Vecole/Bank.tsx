@@ -39,10 +39,19 @@ export default function BankForm() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [standards, setStandards] = useState<Standard[]>([]);
   useEffect(() => {
-    // Fetch contents for item generation
-    fetch("http://localhost:4000/api/content")
-      .then(res => res.json())
-      .then(data => setContents(Array.isArray(data) ? data : []));
+    // Fetch contents for item generation (only user-specific if teacher)
+    const fetchContents = async () => {
+      const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+      let url = "http://localhost:4000/api/content";
+      if (role && userId) {
+        url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+      }
+      const res = await fetch(url);
+      const data = await res.json();
+      setContents(Array.isArray(data) ? data : []);
+    };
+    fetchContents();
     // Fetch grades
     fetch("http://localhost:4000/api/grades")
       .then(res => res.json())
@@ -70,7 +79,13 @@ export default function BankForm() {
     const fetchBanks = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:4000/api/banks");
+        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        let url = "http://localhost:4000/api/banks";
+        if (role && userId) {
+          url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
+        }
+        const response = await fetch(url);
         const data = await response.json();
         if (response.ok) {
           setBanks(data);
@@ -111,11 +126,18 @@ export default function BankForm() {
       const url = editingId ? `http://localhost:4000/api/banks/${editingId}` : "http://localhost:4000/api/banks";
       const method = editingId ? "PUT" : "POST";
       // Filter out empty strings from gradeIds and standardIds
-      const cleanFormData = {
+      let cleanFormData = {
         ...formData,
         gradeIds: formData.gradeIds.filter(id => id),
         standardIds: formData.standardIds.filter(id => id)
       };
+      // Add createdBy from localStorage if creating (not editing)
+      if (!editingId) {
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        if (userId) {
+          cleanFormData = { ...cleanFormData, createdBy: userId };
+        }
+      }
       const fetchOptions: RequestInit = {
         method,
         headers: {
@@ -411,10 +433,11 @@ export default function BankForm() {
                     setGenError("");
                     setGenSuccess("");
                     try {
+                      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
                       const res = await fetch("http://localhost:4000/api/items/generate", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ bankId: selectedBankId, contentId: selectedContentId })
+                        body: JSON.stringify({ bankId: selectedBankId, contentId: selectedContentId, userId })
                       });
                       if (res.ok) {
                         setGenSuccess("Items generated and saved successfully!");

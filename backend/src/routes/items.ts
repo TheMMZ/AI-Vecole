@@ -3,7 +3,7 @@ import Item from "../models/Item";
 import Content from "../models/Content";
 import path from "path";
 import { extractPdfText } from "../utils/pdfParse";
-import { generateQuestionsWithGroq } from "../utils/groq";
+import { generateQuestionsWithGemini } from "../utils/gemini";
 import GeneratedOutput from "../models/GeneratedOutput";
 
 export default async function itemsRoutes(fastify: FastifyInstance) {
@@ -25,7 +25,17 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     }
   });
   fastify.get("/api/items", async (req, reply) => {
-    const items = await Item.find().sort({ createdAt: -1 });
+    const { role, userId } = req.query as { role?: string; userId?: string };
+    let filter = {};
+    if (role === "teacher" && userId) {
+      try {
+        const mongoose = require("mongoose");
+        filter = { createdBy: new mongoose.Types.ObjectId(userId) };
+      } catch {
+        filter = { createdBy: userId };
+      }
+    }
+    const items = await Item.find(filter).sort({ createdAt: -1 });
     reply.send(items);
   });
 
@@ -41,8 +51,11 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
 
   // AI-powered item generation endpoint
   fastify.post("/api/items/generate", async (req, reply) => {
-    // Example: req.body = { contentId, bankId }
-    const { contentId, bankId } = req.body as { contentId: string; bankId: string };
+    // Example: req.body = { contentId, bankId, userId }
+    const { contentId, bankId, userId } = req.body as { contentId: string; bankId: string; userId: string };
+    if (!userId) {
+      return reply.status(400).send({ message: "userId is required to generate items" });
+    }
     // 1. Find the content document
     const contentDoc = await Content.findById(contentId);
     if (!contentDoc) {
@@ -65,9 +78,9 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     // 4. Send pdfText to GROQ API to generate questions
     let generated: any = { raw: "", questions: [] };
     try {
-      generated = await generateQuestionsWithGroq(pdfText);
+  generated = await generateQuestionsWithGemini(pdfText);
     } catch (err) {
-      return reply.status(500).send({ message: "GROQ API error" });
+  return reply.status(500).send({ message: "Gemini API error" });
     }
 
     // Save raw model output for auditing/debugging. If raw is empty, store an explanatory fallback
@@ -88,6 +101,7 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
       bankId,
       contentId,
       generatedOutputId: generatedOutputDoc?._id,
+      createdBy: userId,
       type: q.type,
       question: q.question,
       options: q.options || [],

@@ -4,6 +4,7 @@ export interface IItem extends Document {
   bankId: Types.ObjectId;
   contentId: Types.ObjectId;
   generatedOutputId?: Types.ObjectId;
+  createdBy: Types.ObjectId;
   type: "MCQ" | "TrueFalse";
   question: string;
   options: string[];
@@ -20,6 +21,7 @@ const ItemSchema = new Schema<IItem>({
   bankId: { type: Schema.Types.ObjectId, ref: "Bank", required: true },
   contentId: { type: Schema.Types.ObjectId, ref: "Content", required: true },
   generatedOutputId: { type: Schema.Types.ObjectId, ref: "GeneratedOutput" },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   type: { type: String, enum: ["MCQ", "TrueFalse"], required: true },
   question: { type: String, required: true },
   options: [{ type: String }],

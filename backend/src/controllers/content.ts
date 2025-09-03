@@ -3,7 +3,13 @@ import { Request, Response } from "express";
 
 export async function getAllContent(req: Request, res: Response) {
   try {
-    const content = await Content.find();
+    const { role, userId } = req.query as { role?: string; userId?: string };
+    let filter = {};
+    if (role === "teacher" && userId) {
+      const mongoose = require("mongoose");
+      filter = { uploadedBy: new mongoose.Types.ObjectId(userId) };
+    }
+    const content = await Content.find(filter);
     res.json(content);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
