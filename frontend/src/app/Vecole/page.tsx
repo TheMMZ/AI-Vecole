@@ -14,7 +14,7 @@ type PageKey = "dashboard" | "grades" | "banks" | "items" | "standards" | "conte
 
 
 const COMPONENTS: Record<PageKey, React.ReactNode> = {
-  dashboard: <Dashboard />,
+  dashboard: undefined, // will be set below
   grades: <Grades />,
   banks: <Bank />,
   items: <Item />,
@@ -24,6 +24,15 @@ const COMPONENTS: Record<PageKey, React.ReactNode> = {
 
 export default function VecoleRoot() {
   const [page, setPage] = useState<PageKey>("dashboard");
+  // Pass setPage as onNavigate to Dashboard
+  const componentsWithNav: Record<PageKey, React.ReactNode> = {
+  dashboard: <Dashboard onNavigate={(p) => setPage(p as PageKey)} />,
+    grades: <Grades />,
+    banks: <Bank />,
+    items: <Item />,
+    standards: <Standard />,
+    contents: <Contents />,
+  };
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <AppHeader onNavigate={(p) => {
@@ -31,7 +40,7 @@ export default function VecoleRoot() {
         else setPage("dashboard");
       }} />
       <main className="flex-1">
-        {COMPONENTS[page]}
+        {componentsWithNav[page]}
       </main>
       <AppFooter />
     </div>

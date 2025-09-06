@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+
 
 type ContentFile = {
   _id: string;
@@ -30,7 +31,21 @@ const StatsCard = ({ title, value, icon, color }: StatsCardProps) => {
   );
 };
 
-export default function VecolePage() {
+type DashboardProps = {
+  onNavigate: (page: string) => void;
+};
+
+export default function VecolePage({ onNavigate }: DashboardProps) {
+  // Scroll to top when navigating
+  const handleNavigate = (page: string) => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    onNavigate(page);
+  };
+  // Remove local pageKey, use parent setPage instead
+  type DashboardProps = {
+    onNavigate: (page: string) => void;
+  };
+  const [showAllActivities, setShowAllActivities] = useState(false);
   const [stats, setStats] = useState({
     banks: 0,
     items: 0,
@@ -41,18 +56,22 @@ export default function VecolePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [recentUploads, setRecentUploads] = useState<ContentFile[]>([]);
+  const [recentActivity, setRecentActivity] = useState<{ action: string; date: string; icon: string }[]>([]);
 
   useEffect(() => {
     const fetchCounts = async () => {
       setLoading(true);
       setError("");
       try {
+        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        const query = role && userId ? `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}` : "";
         const [banksRes, itemsRes, gradesRes, standardsRes, contentRes] = await Promise.all([
-          fetch("http://localhost:4000/api/banks"),
-          fetch("http://localhost:4000/api/items"),
+          fetch(`http://localhost:4000/api/banks${query}`),
+          fetch(`http://localhost:4000/api/items${query}`),
           fetch("http://localhost:4000/api/grades"),
           fetch("http://localhost:4000/api/standards"),
-          fetch("http://localhost:4000/api/content")
+          fetch(`http://localhost:4000/api/content${query}`)
         ]);
         if (!banksRes.ok || !itemsRes.ok || !gradesRes.ok || !standardsRes.ok || !contentRes.ok) {
           throw new Error("Failed to fetch one or more resources");
@@ -78,6 +97,90 @@ export default function VecolePage() {
         } else {
           setRecentUploads([]);
         }
+
+        // Dynamic Recent Activity
+        const activities: { action: string; date: string; icon: string }[] = [];
+        // Last created banks
+        if (Array.isArray(banks)) {
+          banks.slice(0, 3).forEach(bank => {
+            activities.push({
+              action: `Created bank "${bank.title}"`,
+              date: bank.createdAt ? new Date(bank.createdAt).toLocaleDateString() : "-",
+              icon: "🏦"
+            });
+          });
+        }
+        // Last uploaded contents
+        if (Array.isArray(content)) {
+          content.slice(0, 3).forEach(c => {
+            activities.push({
+              action: `Uploaded content "${c.title || c.filename}"`,
+              date: c.uploadedAt ? new Date(c.uploadedAt).toLocaleDateString() : "-",
+              icon: "📄"
+            });
+          });
+        }
+        // Last created items (group consecutive questions)
+        if (Array.isArray(items)) {
+          // Sort items by createdAt descending
+          const sortedItems = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          let questionStreak = 0;
+          let lastDate = null;
+          for (let i = 0; i < sortedItems.length; i++) {
+            const item = sortedItems[i];
+            // If item has a question field, count it as a question
+            if (item.question) {
+              if (lastDate === item.createdAt) {
+                questionStreak++;
+              } else {
+                if (questionStreak > 0) {
+                  activities.push({
+                    action: `Created items: ${questionStreak} new questions`,
+                    date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
+                    icon: "📝"
+                  });
+                }
+                questionStreak = 1;
+                lastDate = item.createdAt;
+              }
+            } else {
+              // If previous streak exists, push it
+              if (questionStreak > 0) {
+                activities.push({
+                  action: `Created items: ${questionStreak} new questions`,
+                  date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
+                  icon: "📝"
+                });
+                questionStreak = 0;
+                lastDate = null;
+              }
+              // Optionally, handle other item types here
+            }
+            // Limit to last 3 grouped activities
+            if (activities.filter(a => a.icon === "📝").length >= 3) break;
+          }
+          // Push any remaining streak
+          if (questionStreak > 0) {
+            activities.push({
+              action: `Created items: ${questionStreak} new questions`,
+              date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
+              icon: "📝"
+            });
+          }
+        }
+        // Generated items (if metadata or tags present)
+        if (Array.isArray(items)) {
+          items.filter(item => item.metadata && item.metadata.tags && item.metadata.tags.includes("generated")).slice(0, 2).forEach(item => {
+            activities.push({
+              action: `Generated item "${item.question || item.name || 'Untitled'}"`,
+              date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-",
+              icon: "🤖"
+            });
+          });
+        }
+        // Sort activities by date descending
+        activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecentActivity(activities.slice(0, 10));
       } catch (err) {
         setError("Failed to load dashboard stats");
       } finally {
@@ -155,26 +258,53 @@ export default function VecolePage() {
           >
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
             <div className="space-y-4">
-              {[
-                { action: "Created new item bank", date: "2 hours ago", icon: "➕" },
-                { action: "Generated 15 MCQ items", date: "5 hours ago", icon: "🤖" },
-                { action: "Uploaded new PDF content", date: "1 day ago", icon: "📄" },
-                { action: "Aligned 8 items to standards", date: "2 days ago", icon: "🔗" }
-              ].map((activity, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 * index }}
-                  className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg"
-                >
-                  <span className="text-2xl">{activity.icon}</span>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">{activity.action}</p>
-                    <p className="text-sm text-gray-500">{activity.date}</p>
-                  </div>
-                </motion.div>
-              ))}
+              {recentActivity.length === 0 ? (
+                <div className="text-gray-500">No recent activity found.</div>
+              ) : (
+                <>
+                  {(showAllActivities ? recentActivity.slice(0, 10) : recentActivity.slice(0, 5)).map((activity, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.1 * index }}
+                      className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg"
+                    >
+                      <span className="text-2xl">{activity.icon}</span>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{activity.action}</p>
+                        <p className="text-sm text-gray-500">{activity.date}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {recentActivity.length > 5 && !showAllActivities && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setShowAllActivities(true)}
+                        className="mt-2 focus:outline-none"
+                        aria-label="Show more activities"
+                      >
+                        <svg width="20" height="12" viewBox="0 0 32 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M2 2L16 16L30 2" stroke="#6B7280" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  {showAllActivities && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setShowAllActivities(false)}
+                        className="mt-2 focus:outline-none"
+                        aria-label="Show less activities"
+                      >
+                        <svg width="20" height="12" viewBox="0 0 32 18" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
+                          <path d="M2 2L16 16L30 2" stroke="#6B7280" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -183,27 +313,39 @@ export default function VecolePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="grid grid-cols-1 lg:grid-cols-7 gap-6"
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white p-6 rounded-xl shadow-md"
+              className="bg-white p-6 rounded-xl shadow-md col-span-3 flex flex-col justify-between"
             >
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-              <div className="space-y-3">
-                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="grid grid-cols-2 gap-3">
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('dashboard')}>
+                  <span className="text-2xl">📊</span>
+                  <span>View Analytics</span>
+                </button>
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('contents')}>
                   <span className="text-2xl">📤</span>
                   <span>Upload New PDF</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('banks')}>
                   <span className="text-2xl">🏦</span>
                   <span>Create New Bank</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl">📊</span>
-                  <span>View Analytics</span>
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('standards')}>
+                  <span className="text-2xl">🎯</span>
+                  <span>Show Standards</span>
+                </button>
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('grades')}>
+                  <span className="text-2xl">🎓</span>
+                  <span>Show Grades</span>
+                </button>
+                <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => handleNavigate('items')}>
+                  <span className="text-2xl">📝</span>
+                  <span>Create Items</span>
                 </button>
               </div>
             </motion.div>
@@ -213,7 +355,7 @@ export default function VecolePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="bg-white p-6 rounded-xl shadow-md md:col-span-2"
+              className="bg-white p-6 rounded-xl shadow-md col-span-4"
             >
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Uploads</h2>
               <div className="overflow-x-auto">
