@@ -21,7 +21,7 @@ async function start() {
   });
   // Serve static files from uploads directory
   fastify.register(fastifyStatic, {
-    root: path.join(__dirname, "../../uploads"),
+    root: path.join(__dirname, "../uploads"),
     prefix: "/uploads/",
   });
 
