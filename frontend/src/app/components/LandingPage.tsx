@@ -56,7 +56,7 @@ export default function LandingPage() {
         <meta name="description" content="Convert textbook PDFs into standards-aligned question banks with AI" />
       </Head>
 
-      <header className="w-full h-24 bg-white shadow flex items-center justify-between px-8 py-4">
+      <header className="w-full h-24 bg-white shadow flex items-center justify-between px-8 py-4 rounded-bl-2xl rounded-br-2xl mb-8">
         <div className="flex items-center gap-2">
           <svg width="110" height="32" viewBox="0 0 110 32" fill="none">
             <path 
@@ -92,7 +92,7 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section 
           className="relative py-20 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center"
-          style={{ backgroundColor: "#e9ded8" }}
+          style={{ backgroundColor: "#fafafa" }}
         >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -138,7 +138,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "#dfd5ce" }}>
+        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "#ededed" }}>
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0 }}
@@ -173,7 +173,7 @@ export default function LandingPage() {
         </section>
 
         {/* Animated Feature Showcase */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "#e6dbd4" }}>
+        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "#dbdbdb" }}>
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1">
               <AnimatePresence mode="wait">
@@ -235,7 +235,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 text-center" style={{ backgroundColor: "#d8cec7" }}>
+        <section className="py-20 px-4 sm:px-6 lg:px-8 text-center" style={{ backgroundColor: "#cfcfcf" }}>
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
