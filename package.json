@@ -1,17 +1,18 @@
 {
   "dependencies": {
-    "@fastify/multipart": "^9.0.3",
-    "@fastify/static": "^8.2.0",
-    "@types/express": "^5.0.3",
-    "@types/mongoose": "^5.11.96",
-    "express": "^5.1.0",
-    "fastify-multer": "^2.0.3",
-    "groq-sdk": "^0.31.0",
+    "fastify": "^4.26.2",
+    "@fastify/static": "^8.0.0",
+    "@fastify/multipart": "^9.0.0",
     "mongoose": "^8.17.0",
     "multer": "^2.0.2",
-    "pdf-parse": "^1.1.1"
+    "groq-sdk": "^0.31.0",
+    "pdf-parse": "^1.1.1",
+    "fastify-multer": "^2.0.3"
   },
   "devDependencies": {
-    "@types/pdf-parse": "^1.1.5"
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/mongoose": "^5.11.96"
   }
 }
