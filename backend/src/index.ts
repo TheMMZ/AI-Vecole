@@ -116,9 +116,10 @@ async function start() {
   fastify.get('/health', async () => ({ status: 'ok' }));
 
   try {
-    const port = parseInt(process.env.PORT || "4000", 10);
-    await fastify.listen({ port });
-    console.log(`Fastify API running at http://0.0.0.0:${port}`);
+  const port = parseInt(process.env.PORT || "4000", 10);
+  const host = process.env.HOST || '0.0.0.0';
+  await fastify.listen({ port, host });
+  console.log(`Fastify API running and listening on ${host}:${port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
