@@ -48,17 +48,40 @@ async function start() {
     prefix: "/uploads/",
   });
 
-  // Connect native MongoDB for auth
-  const db = await connectToDB();
+  // Start the HTTP server first (so the process stays up) then connect DB in background
+  let dbRef: any = null;
 
-  // Connect Mongoose for Mongoose models
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/vecole-db";
-  await mongoose.connect(MONGODB_URI);
-  console.log("Mongoose connected");
+  // Protect API routes: if db not ready, return 503
+  fastify.addHook('onRequest', async (req, reply) => {
+    if (req.url.startsWith('/api') && !dbRef) {
+      return reply.status(503).send({ error: 'Database not available yet' });
+    }
+  });
 
-  try {
+  // Connect to DB in background with retry/backoff; set dbRef when ready
+  (async () => {
+    try {
+      const db = await connectToDB();
+      dbRef = db;
+    } catch (err) {
+      console.error('Failed to connect to MongoDB after retries:', err);
+    }
+  })();
+
+  // Connect Mongoose (in background too)
+  (async () => {
+    try {
+      const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/vecole-db";
+      await mongoose.connect(MONGODB_URI);
+      console.log("Mongoose connected");
+    } catch (err) {
+      console.error('Mongoose connection failed:', err);
+    }
+  })();
+
+    try {
     console.log('Registering auth routes');
-    await authRoutes(fastify, db);
+    await authRoutes(fastify, () => dbRef);
     console.log('Registered auth routes');
   } catch (err) {
     console.error('Failed registering auth routes', err);

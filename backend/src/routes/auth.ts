@@ -2,8 +2,12 @@ import { FastifyInstance } from "fastify";
 import { Db } from "mongodb";
 import { createToken, hashPassword, comparePassword } from "../utils/auth";
 
-export default async function authRoutes(fastify: FastifyInstance, db: Db) {
+// Accept a provider function that returns the current Db instance (or null if not connected)
+export default async function authRoutes(fastify: FastifyInstance, getDb: () => Db | null) {
   fastify.post("/api/register", async (req, reply) => {
+    const db = getDb();
+    if (!db) return reply.code(503).send({ error: "Database not available" });
+
     const { email, password, username, role } = req.body as { email?: string; password?: string; username?: string; role?: string };
 
     if (!email || !password || !username) {
@@ -28,6 +32,9 @@ export default async function authRoutes(fastify: FastifyInstance, db: Db) {
   });
 
   fastify.post("/api/login", async (req, reply) => {
+    const db = getDb();
+    if (!db) return reply.code(503).send({ error: "Database not available" });
+
     const { email, password } = req.body as { email?: string; password?: string };
 
     if (!email || !password) {
