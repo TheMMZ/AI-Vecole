@@ -20,15 +20,42 @@ if (!/^mongodb(?:\+srv)?:\/\//.test(uri)) {
   process.exit(1);
 }
 
-const client = new MongoClient(uri);
+const client = new MongoClient(uri, { connectTimeoutMS: 10000 });
+
+const MAX_RETRIES = parseInt(process.env.MONGODB_CONNECT_RETRIES || '5', 10);
+const INITIAL_BACKOFF_MS = parseInt(process.env.MONGODB_INITIAL_BACKOFF_MS || '1000', 10);
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export async function connectToDB(): Promise<Db> {
+  let attempt = 0;
+  while (true) {
+    try {
+      attempt++;
+      await client.connect();
+      console.log('Connected to MongoDB');
+      return client.db();
+    } catch (err) {
+      console.error(`MongoDB connection attempt ${attempt} failed:`, err);
+      if (attempt >= MAX_RETRIES) {
+        console.error(`Exceeded max MongoDB connect attempts (${MAX_RETRIES}).`);
+        throw err;
+      }
+      const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
+      console.log(`Retrying MongoDB connection in ${backoff}ms...`);
+      await sleep(backoff);
+    }
+  }
+}
+
+export async function pingMongo(): Promise<boolean> {
   try {
-    await client.connect();
-    console.log("Connected to MongoDB");
-    return client.db();
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    process.exit(1);
+    // run a cheap command to check connectivity
+    await client.db().command({ ping: 1 });
+    return true;
+  } catch (err) {
+    return false;
   }
 }
