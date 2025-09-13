@@ -30,13 +30,7 @@ export default function ItemForm() {
       setIsLoading(true);
       const response = await fetch(`http://localhost:4000/api/items?bankId=${bankId}`, { method: "DELETE" });
       if (response.ok) {
-        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
-        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-        let itemsUrl = "http://localhost:4000/api/items";
-        if (role && userId) {
-          itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
-        }
-        const refreshed = await fetch(itemsUrl);
+        const refreshed = await fetch("http://localhost:4000/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
       } else {
@@ -58,13 +52,7 @@ export default function ItemForm() {
       setIsLoading(true);
       const response = await fetch(`http://localhost:4000/api/items?contentId=${contentId}`, { method: "DELETE" });
       if (response.ok) {
-        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
-        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-        let itemsUrl = "http://localhost:4000/api/items";
-        if (role && userId) {
-          itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
-        }
-        const refreshed = await fetch(itemsUrl);
+        const refreshed = await fetch("http://localhost:4000/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
       } else {
@@ -227,13 +215,7 @@ export default function ItemForm() {
       const response = await fetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
-        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
-        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-        let itemsUrl = "http://localhost:4000/api/items";
-        if (role && userId) {
-          itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
-        }
-        const refreshed = await fetch(itemsUrl);
+        const refreshed = await fetch("http://localhost:4000/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
         resetForm();

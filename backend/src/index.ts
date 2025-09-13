@@ -14,8 +14,9 @@ import contentRoutes from "./routes/content";
 const fastify = Fastify();
 
 async function start() {
+  const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
   fastify.register(fastifyCors, {
-    origin: "http://localhost:3000",
+    origin: FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   });
@@ -50,8 +51,9 @@ async function start() {
   }));
 
   try {
-    await fastify.listen({ port: 4000 });
-    console.log("Fastify API running at http://localhost:4000");
+    const port = parseInt(process.env.PORT || "4000", 10);
+    await fastify.listen({ port });
+    console.log(`Fastify API running at http://0.0.0.0:${port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
