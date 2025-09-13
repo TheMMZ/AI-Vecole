@@ -114,6 +114,18 @@ async function start() {
   }));
 
   fastify.get('/health', async () => ({ status: 'ok' }));
+  // Debug endpoint for memory/uptime diagnostics
+  fastify.get('/debug', async () => ({
+    memory: process.memoryUsage(),
+    uptime: process.uptime(),
+    pid: process.pid
+  }));
+
+  // Periodic memory logging to detect leaks/OOM
+  setInterval(() => {
+    const m = process.memoryUsage();
+    console.log(`MEM_STATS pid=${process.pid} rss=${m.rss} heapUsed=${m.heapUsed} heapTotal=${m.heapTotal}`);
+  }, 15000);
 
   try {
   const port = parseInt(process.env.PORT || "4000", 10);
