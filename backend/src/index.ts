@@ -13,6 +13,28 @@ import contentRoutes from "./routes/content";
 
 const fastify = Fastify();
 
+// Global handlers to capture uncaught errors and rejections for better diagnostics in production
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception', err);
+  // Give logs time to flush then exit
+  setTimeout(() => process.exit(1), 100);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection', reason);
+  setTimeout(() => process.exit(1), 100);
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
 async function start() {
   const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
   fastify.register(fastifyCors, {
@@ -34,14 +56,55 @@ async function start() {
   await mongoose.connect(MONGODB_URI);
   console.log("Mongoose connected");
 
-  await authRoutes(fastify, db);
-  await bankRoutes(fastify);
-  await gradesRoutes(fastify);
-  await itemsRoutes(fastify);
-  await standardsRoutes(fastify);
-  await contentRoutes(fastify);
+  try {
+    console.log('Registering auth routes');
+    await authRoutes(fastify, db);
+    console.log('Registered auth routes');
+  } catch (err) {
+    console.error('Failed registering auth routes', err);
+  }
 
-  // Root route
+  try {
+    console.log('Registering bank routes');
+    await bankRoutes(fastify);
+    console.log('Registered bank routes');
+  } catch (err) {
+    console.error('Failed registering bank routes', err);
+  }
+
+  try {
+    console.log('Registering grades routes');
+    await gradesRoutes(fastify);
+    console.log('Registered grades routes');
+  } catch (err) {
+    console.error('Failed registering grades routes', err);
+  }
+
+  try {
+    console.log('Registering items routes');
+    await itemsRoutes(fastify);
+    console.log('Registered items routes');
+  } catch (err) {
+    console.error('Failed registering items routes', err);
+  }
+
+  try {
+    console.log('Registering standards routes');
+    await standardsRoutes(fastify);
+    console.log('Registered standards routes');
+  } catch (err) {
+    console.error('Failed registering standards routes', err);
+  }
+
+  try {
+    console.log('Registering content routes');
+    await contentRoutes(fastify);
+    console.log('Registered content routes');
+  } catch (err) {
+    console.error('Failed registering content routes', err);
+  }
+
+  // Root route and health check
   fastify.get("/", async () => ({
     status: "API is running",
     routes: {
@@ -49,6 +112,8 @@ async function start() {
       auth: "/api/auth"
     }
   }));
+
+  fastify.get('/health', async () => ({ status: 'ok' }));
 
   try {
     const port = parseInt(process.env.PORT || "4000", 10);
