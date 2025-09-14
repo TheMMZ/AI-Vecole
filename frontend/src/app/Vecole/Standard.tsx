@@ -62,7 +62,7 @@ export default function StandardForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       };
-      const response = await fetch(url, fetchOptions);
+  const response = await apiFetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
   const refreshed = await apiFetch("/api/standards");
