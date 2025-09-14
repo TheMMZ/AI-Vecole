@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { apiFetch } from '../../lib/api';
 
 interface LoginFormProps {
   onFlip: () => void;
@@ -35,7 +36,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onFlip }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/login", {
+      const res = await apiFetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })

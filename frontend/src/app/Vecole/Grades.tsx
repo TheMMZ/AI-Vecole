@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../lib/api";
 import { motion } from "framer-motion";
 
 type Grade = {
@@ -28,7 +29,7 @@ export default function GradeForm() {
     const fetchGrades = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:4000/api/grades");
+  const response = await apiFetch("/api/grades");
         const data = await response.json();
         if (response.ok) {
           setGrades(data);
@@ -54,18 +55,18 @@ export default function GradeForm() {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const url = editingId ? `http://localhost:4000/api/grades/${editingId}` : "http://localhost:4000/api/grades";
+  const url = editingId ? `/api/grades/${editingId}` : "/api/grades";
       const method = editingId ? "PUT" : "POST";
       const fetchOptions: RequestInit = {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       };
-      const response = await fetch(url, fetchOptions);
+  const response = await apiFetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/grades");
-        const refreshedData = await refreshed.json();
+  const refreshed = await apiFetch("/api/grades");
+  const refreshedData = await refreshed.json();
         setGrades(refreshedData);
         resetForm();
       } else {
@@ -88,10 +89,10 @@ export default function GradeForm() {
     if (!confirm("Are you sure you want to delete this grade?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/grades/${id}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/grades/${id}`, { method: "DELETE" });
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/grades");
-        const refreshedData = await refreshed.json();
+  const refreshed = await apiFetch("/api/grades");
+  const refreshedData = await refreshed.json();
         setGrades(refreshedData);
       } else {
         const data = await response.json();

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { apiFetch } from "../../lib/api";
 
 
 type ContentFile = {
@@ -67,11 +68,11 @@ export default function VecolePage({ onNavigate }: DashboardProps) {
         const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
         const query = role && userId ? `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}` : "";
         const [banksRes, itemsRes, gradesRes, standardsRes, contentRes] = await Promise.all([
-          fetch(`http://localhost:4000/api/banks${query}`),
-          fetch(`http://localhost:4000/api/items${query}`),
-          fetch("http://localhost:4000/api/grades"),
-          fetch("http://localhost:4000/api/standards"),
-          fetch(`http://localhost:4000/api/content${query}`)
+          apiFetch(`/api/banks${query}`),
+          apiFetch(`/api/items${query}`),
+          apiFetch("/api/grades"),
+          apiFetch("/api/standards"),
+          apiFetch(`/api/content${query}`)
         ]);
         if (!banksRes.ok || !itemsRes.ok || !gradesRes.ok || !standardsRes.ok || !contentRes.ok) {
           throw new Error("Failed to fetch one or more resources");

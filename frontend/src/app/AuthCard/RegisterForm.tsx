@@ -44,7 +44,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/register", {
+      const base = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+      const res = await fetch(`${base}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, username, role: "teacher" })

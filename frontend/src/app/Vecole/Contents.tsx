@@ -2,6 +2,7 @@
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { motion } from "framer-motion";
+import { apiFetch, apiBase } from "../../lib/api";
 
 type ContentFile = {
   _id: string;
@@ -28,11 +29,11 @@ export default function Contents() {
     try {
       const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
       const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-      let url = "http://localhost:4000/api/content";
+  let url = "/api/content";
       if (role && userId) {
         url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
       }
-      const res = await fetch(url);
+  const res = await apiFetch(url);
       const data = await res.json();
       if (res.ok) {
         setFiles(data);
@@ -73,7 +74,7 @@ export default function Contents() {
       if (userId) {
         formData.append("uploadedBy", userId);
       }
-      const res = await fetch("http://localhost:4000/api/content/upload", {
+      const res = await apiFetch("/api/content/upload", {
         method: "POST",
         body: formData,
       });
@@ -97,7 +98,7 @@ export default function Contents() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch(`http://localhost:4000/api/content/${id}`, {
+      const res = await apiFetch(`/api/content/${id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -222,7 +223,7 @@ export default function Contents() {
                     </div>
                     <div>
                       <a
-                        href={`http://localhost:4000${file.url}`}
+                        href={`${apiBase()}${file.url}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-[#456CBD] hover:underline text-lg"

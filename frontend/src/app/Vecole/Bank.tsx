@@ -43,7 +43,7 @@ export default function BankForm() {
     const fetchContents = async () => {
       const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
       const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-      let url = "http://localhost:4000/api/content";
+  let url = "/api/content";
       if (role && userId) {
         url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
       }
@@ -53,11 +53,11 @@ export default function BankForm() {
     };
     fetchContents();
     // Fetch grades
-    fetch("http://localhost:4000/api/grades")
+  apiFetch("/api/grades")
       .then(res => res.json())
       .then(data => setGrades(Array.isArray(data) ? data : []));
     // Fetch standards
-    fetch("http://localhost:4000/api/standards")
+  apiFetch("/api/standards")
       .then(res => res.json())
       .then(data => setStandards(Array.isArray(data) ? data : []));
   }, []);
@@ -83,7 +83,7 @@ export default function BankForm() {
         setIsLoading(true);
         const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
         const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-        let url = "http://localhost:4000/api/banks";
+  let url = "/api/banks";
         if (role && userId) {
           url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
@@ -125,7 +125,7 @@ export default function BankForm() {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const url = editingId ? `http://localhost:4000/api/banks/${editingId}` : "http://localhost:4000/api/banks";
+  const url = editingId ? `/api/banks/${editingId}` : "/api/banks";
       const method = editingId ? "PUT" : "POST";
       // Filter out empty strings from gradeIds and standardIds
       let cleanFormData = {
@@ -151,7 +151,7 @@ export default function BankForm() {
       const data = await response.json();
       if (response.ok) {
         // After update or create, re-fetch the banks list for consistency
-        const refreshed = await fetch("http://localhost:4000/api/banks");
+  const refreshed = await apiFetch("/api/banks");
         const refreshedData = await refreshed.json();
         setBanks(refreshedData);
         resetForm();
@@ -180,12 +180,12 @@ export default function BankForm() {
     if (!confirm("Are you sure you want to delete this bank?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/banks/${id}`, {
+  const response = await apiFetch(`/api/banks/${id}`, {
         method: "DELETE"
       });
       if (response.ok) {
         // After delete, re-fetch the banks list for consistency
-        const refreshed = await fetch("http://localhost:4000/api/banks");
+  const refreshed = await apiFetch("/api/banks");
         const refreshedData = await refreshed.json();
         setBanks(refreshedData);
       } else {
@@ -436,7 +436,7 @@ export default function BankForm() {
                     setGenSuccess("");
                     try {
                       const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-                      const res = await fetch("http://localhost:4000/api/items/generate", {
+                      const res = await apiFetch("/api/items/generate", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ bankId: selectedBankId, contentId: selectedContentId, userId })

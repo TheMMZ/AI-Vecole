@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { apiFetch } from "../../lib/api";
 
 type Standard = {
   _id: string;
@@ -28,7 +29,7 @@ export default function StandardForm() {
     const fetchStandards = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:4000/api/standards");
+  const response = await apiFetch("/api/standards");
         const data = await response.json();
         if (response.ok) {
           setStandards(data);
@@ -54,7 +55,7 @@ export default function StandardForm() {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const url = editingId ? `http://localhost:4000/api/standards/${editingId}` : "http://localhost:4000/api/standards";
+  const url = editingId ? `/api/standards/${editingId}` : "/api/standards";
       const method = editingId ? "PUT" : "POST";
       const fetchOptions: RequestInit = {
         method,
@@ -64,7 +65,7 @@ export default function StandardForm() {
       const response = await fetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/standards");
+  const refreshed = await apiFetch("/api/standards");
         const refreshedData = await refreshed.json();
         setStandards(refreshedData);
         resetForm();
@@ -88,9 +89,9 @@ export default function StandardForm() {
     if (!confirm("Are you sure you want to delete this standard?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/standards/${id}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/standards/${id}`, { method: "DELETE" });
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/standards");
+  const refreshed = await apiFetch("/api/standards");
         const refreshedData = await refreshed.json();
         setStandards(refreshedData);
       } else {

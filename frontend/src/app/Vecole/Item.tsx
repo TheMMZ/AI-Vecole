@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { apiFetch } from "../../lib/api";
 
 type Item = {
   _id: string;
@@ -28,9 +29,9 @@ export default function ItemForm() {
     if (!confirm("Are you sure you want to delete all questions for this bank? This will remove all items in all contents under this bank.")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/items?bankId=${bankId}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/items?bankId=${bankId}`, { method: "DELETE" });
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/items");
+  const refreshed = await apiFetch("/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
       } else {
@@ -50,9 +51,9 @@ export default function ItemForm() {
     if (!confirm("Are you sure you want to delete all questions for this content?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/items?contentId=${contentId}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/items?contentId=${contentId}`, { method: "DELETE" });
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/items");
+  const refreshed = await apiFetch("/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
       } else {
@@ -114,7 +115,7 @@ export default function ItemForm() {
         const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
         const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
         // Fetch items
-        let itemsUrl = "http://localhost:4000/api/items";
+  let itemsUrl = "/api/items";
         if (role && userId) {
           itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
@@ -126,7 +127,7 @@ export default function ItemForm() {
           setError(itemsData.message || "Failed to fetch items");
         }
         // Fetch banks
-        let banksUrl = "http://localhost:4000/api/banks";
+  let banksUrl = "/api/banks";
         if (role && userId) {
           banksUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
@@ -136,7 +137,7 @@ export default function ItemForm() {
           setBanks(banksData);
         }
         // Fetch contents
-        let contentsUrl = "http://localhost:4000/api/content";
+  let contentsUrl = "/api/content";
         if (role && userId) {
           contentsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
@@ -192,7 +193,7 @@ export default function ItemForm() {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const url = editingId ? `http://localhost:4000/api/items/${editingId}` : "http://localhost:4000/api/items";
+  const url = editingId ? `/api/items/${editingId}` : "/api/items";
       const method = editingId ? "PUT" : "POST";
       let dataToSend = { ...formData };
       const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -215,7 +216,7 @@ export default function ItemForm() {
       const response = await fetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/items");
+  const refreshed = await apiFetch("/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
         resetForm();
@@ -251,9 +252,9 @@ export default function ItemForm() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:4000/api/items/${id}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/items/${id}`, { method: "DELETE" });
       if (response.ok) {
-        const refreshed = await fetch("http://localhost:4000/api/items");
+  const refreshed = await apiFetch("/api/items");
         const refreshedData = await refreshed.json();
         setItems(refreshedData);
       } else {
