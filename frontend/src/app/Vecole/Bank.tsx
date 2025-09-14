@@ -148,7 +148,7 @@ export default function BankForm() {
         },
         body: JSON.stringify(cleanFormData),
       };
-      const response = await fetch(url, fetchOptions);
+  const response = await apiFetch(url, fetchOptions);
       const data = await response.json();
       if (response.ok) {
         // After update or create, re-fetch the banks list for consistency

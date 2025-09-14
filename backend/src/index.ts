@@ -42,6 +42,8 @@ async function start() {
     origin: FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    // Explicitly allow Authorization and common headers to avoid blocked preflight when JWT is sent
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
   });
   // Serve static files from uploads directory
   fastify.register(fastifyStatic, {

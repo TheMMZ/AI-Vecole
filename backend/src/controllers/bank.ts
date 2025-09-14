@@ -46,6 +46,12 @@ export async function createBank(req: FastifyRequest, reply: FastifyReply) {
       standardIds: standardIds?.map(id => new mongoose.Types.ObjectId(id)),
     });
     await bank.save();
+    try {
+      const Activity = require("../models/Activity").default;
+      await Activity.create({ action: `Created bank "${bank.title}"`, icon: "🏦" });
+    } catch (e) {
+      console.warn("Failed to record activity for bank creation", e);
+    }
     reply.code(201).send(bank);
   } catch (err: any) {
     reply.code(400).send({ error: err.message });
