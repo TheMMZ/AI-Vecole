@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch, apiBase } from "../../lib/api";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 
@@ -47,7 +48,7 @@ export default function BankForm() {
       if (role && userId) {
         url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
       }
-      const res = await fetch(url);
+  const res = await apiFetch(url);
       const data = await res.json();
       setContents(Array.isArray(data) ? data : []);
     };
@@ -87,8 +88,8 @@ export default function BankForm() {
         if (role && userId) {
           url += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
-        const response = await fetch(url);
-        const data = await response.json();
+  const response = await apiFetch(url);
+  const data = await response.json();
         if (response.ok) {
           setBanks(data);
         } else {
