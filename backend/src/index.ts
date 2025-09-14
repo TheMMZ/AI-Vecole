@@ -151,12 +151,14 @@ async function start() {
   }, 15000);
 
   try {
-  const port = parseInt(process.env.PORT || "4000", 10);
-  const host = process.env.HOST || '0.0.0.0';
-  await fastify.listen({ port, host });
-  console.log(`Fastify API running and listening on ${host}:${port}`);
+    const port = parseInt(process.env.PORT || "4000", 10);
+    const host = process.env.HOST || '0.0.0.0';
+    console.log(`About to listen on ${host}:${port}`);
+    await fastify.listen({ port, host });
+    console.log(`Fastify API running and listening on ${host}:${port}`);
   } catch (err) {
-    fastify.log.error(err);
+    try { fastify.log && fastify.log.error && fastify.log.error(err); } catch (e) { /* ignore */ }
+    console.error('Listen failed:', err);
     process.exit(1);
   }
 }

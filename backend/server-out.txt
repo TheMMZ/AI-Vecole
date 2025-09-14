@@ -1,0 +1,13 @@
+[dotenv@17.2.1] injecting env (4) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+Registering auth routes
+Registered auth routes
+Registering bank routes
+Registered bank routes
+Registering grades routes
+Registered grades routes
+Registering items routes
+Registered items routes
+Registering standards routes
+Registered standards routes
+Registering content routes
+Registered content routes
