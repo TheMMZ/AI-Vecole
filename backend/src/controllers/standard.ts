@@ -44,6 +44,16 @@ export async function deleteStandard(req: Request, res: Response) {
   try {
     const standard = await Standard.findByIdAndDelete(req.params.id);
     if (!standard) return res.status(404).json({ error: "Standard not found" });
+    try {
+      const Activity = require("../models/Activity").default;
+      const authHeader = (req.headers as any).authorization as string | undefined;
+      const { verifyToken } = require("../utils/auth");
+      const payload = verifyToken(authHeader);
+      const actor = payload?.id;
+      await Activity.create({ action: `Deleted standard "${standard.name}"`, actor, icon: "🗑️" });
+    } catch (e) {
+      console.warn('Failed to record activity for standard deletion', e);
+    }
     res.json({ message: "Standard deleted" });
   } catch (err: any) {
     res.status(400).json({ error: err.message });

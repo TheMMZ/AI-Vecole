@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, userQuery } from "../../lib/api";
 
 type Item = {
   _id: string;
@@ -30,10 +30,10 @@ export default function ItemForm() {
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items?bankId=${bankId}`, { method: "DELETE" });
-      if (response.ok) {
-  const refreshed = await apiFetch("/api/items");
-        const refreshedData = await refreshed.json();
-        setItems(refreshedData);
+    if (response.ok) {
+  const refreshed = await apiFetch(`/api/items${userQuery()}`);
+    const refreshedData = await refreshed.json();
+    setItems(refreshedData);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete items");
@@ -52,10 +52,10 @@ export default function ItemForm() {
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items?contentId=${contentId}`, { method: "DELETE" });
-      if (response.ok) {
-  const refreshed = await apiFetch("/api/items");
-        const refreshedData = await refreshed.json();
-        setItems(refreshedData);
+    if (response.ok) {
+  const refreshed = await apiFetch(`/api/items${userQuery()}`);
+    const refreshedData = await refreshed.json();
+    setItems(refreshedData);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete items");
@@ -119,7 +119,7 @@ export default function ItemForm() {
         if (role && userId) {
           itemsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
-        const itemsRes = await fetch(itemsUrl);
+  const itemsRes = await apiFetch(itemsUrl);
         const itemsData = await itemsRes.json();
         if (itemsRes.ok) {
           setItems(itemsData);
@@ -131,7 +131,7 @@ export default function ItemForm() {
         if (role && userId) {
           banksUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
-        const banksRes = await fetch(banksUrl);
+  const banksRes = await apiFetch(banksUrl);
         const banksData = await banksRes.json();
         if (banksRes.ok) {
           setBanks(banksData);
@@ -141,7 +141,7 @@ export default function ItemForm() {
         if (role && userId) {
           contentsUrl += `?role=${encodeURIComponent(role)}&userId=${encodeURIComponent(userId)}`;
         }
-        const contentsRes = await fetch(contentsUrl);
+  const contentsRes = await apiFetch(contentsUrl);
         const contentsData = await contentsRes.json();
         if (contentsRes.ok) {
           setContents(contentsData);
@@ -213,12 +213,12 @@ export default function ItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
       };
-      const response = await fetch(url, fetchOptions);
+  const response = await apiFetch(url, fetchOptions);
       const data = await response.json();
-      if (response.ok) {
-  const refreshed = await apiFetch("/api/items");
-        const refreshedData = await refreshed.json();
-        setItems(refreshedData);
+  if (response.ok) {
+  const refreshed = await apiFetch(`/api/items${userQuery()}`);
+    const refreshedData = await refreshed.json();
+    setItems(refreshedData);
         resetForm();
       } else {
         setError(data.message || "Operation failed");
@@ -253,10 +253,10 @@ export default function ItemForm() {
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items/${id}`, { method: "DELETE" });
-      if (response.ok) {
-  const refreshed = await apiFetch("/api/items");
-        const refreshedData = await refreshed.json();
-        setItems(refreshedData);
+    if (response.ok) {
+  const refreshed = await apiFetch(`/api/items${userQuery()}`);
+    const refreshedData = await refreshed.json();
+    setItems(refreshedData);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete item");

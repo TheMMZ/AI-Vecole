@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiFetch, apiBase } from "../../lib/api";
+import { apiFetch, apiBase, userQuery } from "../../lib/api";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 
@@ -152,8 +152,8 @@ export default function BankForm() {
       const data = await response.json();
       if (response.ok) {
         // After update or create, re-fetch the banks list for consistency
-  const refreshed = await apiFetch("/api/banks");
-        const refreshedData = await refreshed.json();
+  const refreshed = await apiFetch(`/api/banks${userQuery()}`);
+  const refreshedData = await refreshed.json();
         setBanks(refreshedData);
         resetForm();
       } else {
@@ -186,8 +186,8 @@ export default function BankForm() {
       });
       if (response.ok) {
         // After delete, re-fetch the banks list for consistency
-  const refreshed = await apiFetch("/api/banks");
-        const refreshedData = await refreshed.json();
+  const refreshed = await apiFetch(`/api/banks${userQuery()}`);
+    const refreshedData = await refreshed.json();
         setBanks(refreshedData);
       } else {
         const data = await response.json();

@@ -50,6 +50,16 @@ export async function deleteContent(req: Request, res: Response) {
   try {
     const content = await Content.findByIdAndDelete(req.params.id);
     if (!content) return res.status(404).json({ error: "Content not found" });
+    try {
+      const Activity = require("../models/Activity").default;
+      const authHeader = (req.headers as any).authorization as string | undefined;
+      const { verifyToken } = require("../utils/auth");
+      const payload = verifyToken(authHeader);
+      const actor = payload?.id;
+      await Activity.create({ action: `Deleted content "${content.title || content.filename || content._id}"`, actor, icon: "🗑️" });
+    } catch (e) {
+      console.warn('Failed to record activity for content deletion', e);
+    }
     res.json({ message: "Content deleted" });
   } catch (err: any) {
     res.status(400).json({ error: err.message });

@@ -62,6 +62,16 @@ export async function deleteItem(req: Request, res: Response) {
   try {
     const item = await Item.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ error: "Item not found" });
+    try {
+      const Activity = require("../models/Activity").default;
+      const authHeader = (req.headers as any).authorization as string | undefined;
+      const { verifyToken } = require("../utils/auth");
+      const payload = verifyToken(authHeader);
+      const actor = payload?.id;
+      await Activity.create({ action: `Deleted item "${item.question || item._id}"`, actor, icon: "🗑️" });
+    } catch (e) {
+      console.warn('Failed to record activity for item deletion', e);
+    }
     res.json({ message: "Item deleted" });
   } catch (err: any) {
     res.status(400).json({ error: err.message });

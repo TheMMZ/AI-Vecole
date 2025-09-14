@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { apiFetch, apiBase } from "../../lib/api";
+import { apiFetch, apiBase, userQuery } from "../../lib/api";
 
 type ContentFile = {
   _id: string;

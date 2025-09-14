@@ -22,3 +22,14 @@ export async function apiFetch(path: string, opts?: RequestInit) {
   const finalOpts: RequestInit = { ...(opts || {}), headers };
   return fetch(url, finalOpts);
 }
+
+export function userQuery() {
+  if (typeof window === 'undefined') return '';
+  const role = localStorage.getItem('role');
+  const userId = localStorage.getItem('userId');
+  if (!role || !userId) return '';
+  const params = new URLSearchParams();
+  params.set('role', role);
+  params.set('userId', userId);
+  return `?${params.toString()}`;
+}

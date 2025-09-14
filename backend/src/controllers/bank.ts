@@ -85,6 +85,17 @@ export async function deleteBank(req: FastifyRequest, reply: FastifyReply) {
     // @ts-ignore
     const bank = await Bank.findByIdAndDelete(req.params.id);
     if (!bank) return reply.code(404).send({ error: "Bank not found" });
+    try {
+      const Activity = require("../models/Activity").default;
+      // Try to read actor from Authorization header
+      const auth = (req.headers as any).authorization as string | undefined;
+      const { verifyToken } = require("../utils/auth");
+      const payload = verifyToken(auth);
+      const actor = payload?.id;
+      await Activity.create({ action: `Deleted bank "${bank.title}"`, actor, icon: "🗑️" });
+    } catch (e) {
+      console.warn("Failed to record activity for bank deletion", e);
+    }
     reply.send({ message: "Bank deleted" });
   } catch (err: any) {
     reply.code(500).send({ error: err.message });

@@ -44,6 +44,16 @@ export async function deleteGrade(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const grade = await Grade.findByIdAndDelete(id);
     if (!grade) return reply.status(404).send({ message: "Grade not found" });
+    try {
+      const Activity = require("../models/Activity").default;
+      const auth = (req.headers as any).authorization as string | undefined;
+      const { verifyToken } = require("../utils/auth");
+      const payload = verifyToken(auth);
+      const actor = payload?.id;
+      await Activity.create({ action: `Deleted grade "${grade.name}"`, actor, icon: "🗑️" });
+    } catch (e) {
+      console.warn('Failed to record activity for grade deletion', e);
+    }
     reply.send({ message: "Grade deleted" });
   } catch (err) {
     reply.status(400).send({ message: "Failed to delete grade" });
