@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { FastifyReply, FastifyRequest } from "fastify";
+import Activity from "../models/Activity";
 
 const Grade = mongoose.models.Grade || mongoose.model("Grade", new mongoose.Schema({
   name: { type: String, required: true },
@@ -15,6 +16,11 @@ export async function createGrade(req: FastifyRequest, reply: FastifyReply) {
   try {
     const grade = new Grade(req.body);
     await grade.save();
+    try {
+      await Activity.create({ action: `Created grade "${grade.name}"`, actor: undefined, icon: "🎓" });
+    } catch (e) {
+      console.warn('Failed to record activity for grade creation', e);
+    }
     reply.send(grade);
   } catch (err) {
     reply.status(400).send({ message: "Failed to create grade" });

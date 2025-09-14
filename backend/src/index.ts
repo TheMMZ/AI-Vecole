@@ -10,6 +10,7 @@ import gradesRoutes from "./routes/grades";
 import itemsRoutes from "./routes/items";
 import standardsRoutes from "./routes/standards";
 import contentRoutes from "./routes/content";
+import activitiesRoutes from "./routes/activities";
 
 const fastify = Fastify();
 
@@ -125,6 +126,14 @@ async function start() {
     console.log('Registered content routes');
   } catch (err) {
     console.error('Failed registering content routes', err);
+  }
+
+  try {
+    console.log('Registering activities routes');
+    await activitiesRoutes(fastify);
+    console.log('Registered activities routes');
+  } catch (err) {
+    console.error('Failed registering activities routes', err);
   }
 
   // Root route and health check

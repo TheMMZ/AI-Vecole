@@ -18,6 +18,14 @@ export default async function standardsRoutes(fastify: FastifyInstance) {
     try {
       const standard = new Standard(req.body);
       await standard.save();
+      // record activity
+      try {
+        // import Activity lazily to avoid circular deps
+        const Activity = require("../models/Activity").default;
+        await Activity.create({ action: `Created standard "${standard.name}"`, icon: "🎯" });
+      } catch (e) {
+        console.warn("Failed to record activity for standard creation", e);
+      }
       reply.send(standard);
     } catch (err) {
       reply.status(400).send({ message: "Failed to create standard" });

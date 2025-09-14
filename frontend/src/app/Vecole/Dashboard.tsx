@@ -99,86 +99,101 @@ export default function VecolePage({ onNavigate }: DashboardProps) {
           setRecentUploads([]);
         }
 
-        // Dynamic Recent Activity
-        const activities: { action: string; date: string; icon: string }[] = [];
-        // Last created banks
-        if (Array.isArray(banks)) {
-          banks.slice(0, 3).forEach(bank => {
-            activities.push({
-              action: `Created bank "${bank.title}"`,
-              date: bank.createdAt ? new Date(bank.createdAt).toLocaleDateString() : "-",
-              icon: "🏦"
-            });
-          });
+        // Try fetching server-side activity feed first
+        let activities: { action: string; date: string; icon: string }[] = [];
+        try {
+          const actRes = await apiFetch('/api/activities');
+          if (actRes.ok) {
+            const actData = await actRes.json();
+            if (Array.isArray(actData) && actData.length > 0) {
+              activities = actData.map((a: any) => ({ action: a.action, date: a.date ? new Date(a.date).toLocaleDateString() : '-', icon: a.icon || '🔔' }));
+            }
+          }
+        } catch (e) {
+          // ignore and fall back to building activities from resources
         }
-        // Last uploaded contents
-        if (Array.isArray(content)) {
-          content.slice(0, 3).forEach(c => {
-            activities.push({
-              action: `Uploaded content "${c.title || c.filename}"`,
-              date: c.uploadedAt ? new Date(c.uploadedAt).toLocaleDateString() : "-",
-              icon: "📄"
+
+        // If no server-side activities, compose from local resources (backwards compatibility)
+        if (activities.length === 0) {
+          // Last created banks
+          if (Array.isArray(banks)) {
+            banks.slice(0, 3).forEach((bank: any) => {
+              activities.push({
+                action: `Created bank "${bank.title}"`,
+                date: bank.createdAt ? new Date(bank.createdAt).toLocaleDateString() : "-",
+                icon: "🏦"
+              });
             });
-          });
-        }
-        // Last created items (group consecutive questions)
-        if (Array.isArray(items)) {
-          // Sort items by createdAt descending
-          const sortedItems = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          let questionStreak = 0;
-          let lastDate = null;
-          for (let i = 0; i < sortedItems.length; i++) {
-            const item = sortedItems[i];
-            // If item has a question field, count it as a question
-            if (item.question) {
-              if (lastDate === item.createdAt) {
-                questionStreak++;
+          }
+          // Last uploaded contents
+          if (Array.isArray(content)) {
+            content.slice(0, 3).forEach((c: any) => {
+              activities.push({
+                action: `Uploaded content "${c.title || c.filename}"`,
+                date: c.uploadedAt ? new Date(c.uploadedAt).toLocaleDateString() : "-",
+                icon: "📄"
+              });
+            });
+          }
+          // Last created items (group consecutive questions)
+          if (Array.isArray(items)) {
+            // Sort items by createdAt descending
+            const sortedItems = [...items].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            let questionStreak = 0;
+            let lastDate: string | null = null;
+            for (let i = 0; i < sortedItems.length; i++) {
+              const item = sortedItems[i];
+              // If item has a question field, count it as a question
+              if (item.question) {
+                if (lastDate === item.createdAt) {
+                  questionStreak++;
+                } else {
+                  if (questionStreak > 0) {
+                    activities.push({
+                      action: `Created items: ${questionStreak} new questions`,
+                      date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
+                      icon: "📝"
+                    });
+                  }
+                  questionStreak = 1;
+                  lastDate = item.createdAt;
+                }
               } else {
+                // If previous streak exists, push it
                 if (questionStreak > 0) {
                   activities.push({
                     action: `Created items: ${questionStreak} new questions`,
                     date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
                     icon: "📝"
                   });
+                  questionStreak = 0;
+                  lastDate = null;
                 }
-                questionStreak = 1;
-                lastDate = item.createdAt;
               }
-            } else {
-              // If previous streak exists, push it
-              if (questionStreak > 0) {
-                activities.push({
-                  action: `Created items: ${questionStreak} new questions`,
-                  date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
-                  icon: "📝"
-                });
-                questionStreak = 0;
-                lastDate = null;
-              }
-              // Optionally, handle other item types here
+              // Limit to last 3 grouped activities
+              if (activities.filter(a => a.icon === "📝").length >= 3) break;
             }
-            // Limit to last 3 grouped activities
-            if (activities.filter(a => a.icon === "📝").length >= 3) break;
+            // Push any remaining streak
+            if (questionStreak > 0) {
+              activities.push({
+                action: `Created items: ${questionStreak} new questions`,
+                date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
+                icon: "📝"
+              });
+            }
           }
-          // Push any remaining streak
-          if (questionStreak > 0) {
-            activities.push({
-              action: `Created items: ${questionStreak} new questions`,
-              date: lastDate ? new Date(lastDate).toLocaleDateString() : "-",
-              icon: "📝"
+          // Generated items (if metadata or tags present)
+          if (Array.isArray(items)) {
+            items.filter((item: any) => item.metadata && item.metadata.tags && item.metadata.tags.includes("generated")).slice(0, 2).forEach((item: any) => {
+              activities.push({
+                action: `Generated item "${item.question || item.name || 'Untitled'}"`,
+                date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-",
+                icon: "🤖"
+              });
             });
           }
         }
-        // Generated items (if metadata or tags present)
-        if (Array.isArray(items)) {
-          items.filter(item => item.metadata && item.metadata.tags && item.metadata.tags.includes("generated")).slice(0, 2).forEach(item => {
-            activities.push({
-              action: `Generated item "${item.question || item.name || 'Untitled'}"`,
-              date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-",
-              icon: "🤖"
-            });
-          });
-        }
+
         // Sort activities by date descending
         activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setRecentActivity(activities.slice(0, 10));
