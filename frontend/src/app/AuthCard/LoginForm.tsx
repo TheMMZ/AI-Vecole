@@ -43,9 +43,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onFlip }) => {
       });
       const data = await res.json();
       if (res.ok) {
-        if (data.user && data.user.username) {
-          localStorage.setItem("username", data.user.username);
+        if (data.user) {
+          if (data.user.username) localStorage.setItem("username", data.user.username);
+          if (data.user.role) localStorage.setItem("role", data.user.role);
         }
+        if (data.token) localStorage.setItem("token", data.token);
+        // navigate to the app
         window.location.href = "/Vecole";
       } else {
         setError(data.error || "Login failed");

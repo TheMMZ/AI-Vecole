@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from "react";
+import { apiFetch } from "../../lib/api";
 // EyeIcon SVG component inlined below
 
 interface RegisterFormProps {
@@ -7,13 +8,39 @@ interface RegisterFormProps {
 
 function EyeIcon({ open = false }) {
   return open ? (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-5 h-5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+      />
     </svg>
   ) : (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 002.25 12s3.75 7.5 9.75 7.5c2.042 0 3.82-.393 5.282-1.02M6.223 6.223A10.477 10.477 0 0112 4.5c6 0 9.75 7.5 9.75 7.5a17.978 17.978 0 01-2.307 3.592M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-5 h-5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.98 8.223A10.477 10.477 0 002.25 12s3.75 7.5 9.75 7.5c2.042 0 3.82-.393 5.282-1.02M6.223 6.223A10.477 10.477 0 0112 4.5c6 0 9.75 7.5 9.75 7.5a17.978 17.978 0 01-2.307 3.592M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+      />
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
     </svg>
   );
@@ -44,20 +71,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
     }
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-      const res = await fetch(`${base}/api/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, username, role: "teacher" })
+      const res = await apiFetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username, role: 'teacher' }),
       });
       const data = await res.json();
       if (res.ok) {
         onFlip(); // Flip to login on success
       } else {
-        setError(data.error || "Registration failed");
+        setError(data.error || 'Registration failed');
       }
     } catch (e) {
-      setError("Registration failed");
+      setError('Registration failed');
     } finally {
       setLoading(false);
     }
@@ -66,9 +92,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
   return (
     <div className="w-full h-full bg-white p-8 rounded-lg shadow-lg flex flex-col items-center justify-center [backface-visibility:hidden] absolute top-0 left-0 [transform:rotateY(180deg)]">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Register</h2>
-      <form className="w-full max-w-sm" onSubmit={e => { e.preventDefault(); handleRegister(); }}>
+      <form
+        className="w-full max-w-sm"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleRegister();
+        }}
+      >
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="username"
+          >
             Username
           </label>
           <input
@@ -80,7 +115,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="email"
+          >
             Email
           </label>
           <input
@@ -92,7 +130,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="password"
+          >
             Password
           </label>
           <div className="relative">
@@ -114,7 +155,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
           </div>
         </div>
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirm-password">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="confirm-password"
+          >
             Confirm Password
           </label>
           <div className="relative">
