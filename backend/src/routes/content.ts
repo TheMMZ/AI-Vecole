@@ -33,8 +33,16 @@ async function contentRoutes(fastify: FastifyInstance) {
   fastify.post("/api/content/upload", async (req, reply) => {
   const data = await (req as any).file();
     if (!data) return reply.status(400).send({ message: "No file uploaded" });
-    const filename = data.filename;
-    const filePath = path.join(__dirname, "../../uploads", filename);
+    // Ensure uploads directory exists (prevents ENOENT on containers without the folder)
+    const uploadsDir = path.join(__dirname, "../../uploads");
+    try {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (e) {
+      // ignore; we'll catch write errors below
+    }
+    // sanitize filename to avoid path traversal
+    const filename = path.basename(data.filename || `upload-${Date.now()}.pdf`);
+    const filePath = path.join(uploadsDir, filename);
     await new Promise((resolve, reject) => {
       const stream = fs.createWriteStream(filePath);
       data.file.pipe(stream);
@@ -99,7 +107,11 @@ async function contentRoutes(fastify: FastifyInstance) {
     if (!content) return reply.status(404).send({ message: "File not found" });
     // Remove file from disk
     try {
-      fs.unlinkSync(path.join(__dirname, "../../uploads", path.basename(content.fileUrl)));
+      const maybeName = path.basename(content.fileUrl || '');
+      const fileOnDisk = path.join(__dirname, "../../uploads", maybeName);
+      if (fs.existsSync(fileOnDisk)) {
+        fs.unlinkSync(fileOnDisk);
+      }
     } catch {}
     reply.send({ success: true });
   });
