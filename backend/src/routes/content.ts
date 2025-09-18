@@ -6,6 +6,7 @@ import fastifyMultipart from "@fastify/multipart";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Multipart } from "@fastify/multipart";
 import Content from "../models/Content";
+import { getUploadUrl, getDownloadUrl } from "../controllers/storj";
 
 async function contentRoutes(fastify: FastifyInstance) {
   fastify.register(fastifyMultipart);
@@ -62,6 +63,34 @@ async function contentRoutes(fastify: FastifyInstance) {
       url: content.fileUrl,
       uploadedAt: content.createdAt
     });
+  });
+
+  // Presigned upload URL for Storj (S3-compatible)
+  fastify.post('/api/content/upload-url', async (req, reply) => {
+    return getUploadUrl(req, reply);
+  });
+
+  // After client uploads to Storj using the returned key, client calls confirm to persist metadata
+  fastify.post('/api/content/confirm', async (req, reply) => {
+    const body = req.body as any;
+    const { key, filename, uploadedBy, size, mimeType } = body || {};
+    if (!key || !filename) return reply.status(400).send({ error: 'key and filename required' });
+    // Build a fileUrl that frontend can use to request a download URL later
+    const fileUrl = `/storj/${key}`;
+    let uploadedById = undefined;
+    try {
+      uploadedById = uploadedBy ? new (Content as any).mongoose.Types.ObjectId(uploadedBy) : new (Content as any).mongoose.Types.ObjectId();
+    } catch {
+      uploadedById = new (Content as any).mongoose.Types.ObjectId();
+    }
+    const content = new Content({ title: filename, fileUrl, uploadedBy: uploadedById });
+    await content.save();
+    return reply.send({ _id: content._id, filename: content.title, url: content.fileUrl, uploadedAt: content.createdAt, storageKey: key });
+  });
+
+  // Generate a temporary download URL for a given Storj key
+  fastify.post('/api/content/download-url', async (req, reply) => {
+    return getDownloadUrl(req, reply);
   });
 
   fastify.delete("/api/content/:id", async (req, reply) => {
