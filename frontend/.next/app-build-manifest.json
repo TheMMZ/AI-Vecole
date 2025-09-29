@@ -22,15 +22,6 @@
       "static/chunks/main-app-c5edb945d4468773.js",
       "static/chunks/app/AuthCard/page-d5ef0147894af203.js"
     ],
-    "/Vecole/page": [
-      "static/chunks/webpack-c84e7b3dbc67fa68.js",
-      "static/chunks/fd9d1056-36036aadb8c8a4e4.js",
-      "static/chunks/23-3b25d91f599a1872.js",
-      "static/chunks/main-app-c5edb945d4468773.js",
-      "static/chunks/763-4b43ca8e8f2e1d8f.js",
-      "static/chunks/813-44f8fa1a9125bc41.js",
-      "static/chunks/app/Vecole/page-689d28ea2f453cec.js"
-    ],
     "/page": [
       "static/chunks/webpack-c84e7b3dbc67fa68.js",
       "static/chunks/fd9d1056-36036aadb8c8a4e4.js",
@@ -38,6 +29,15 @@
       "static/chunks/main-app-c5edb945d4468773.js",
       "static/chunks/763-4b43ca8e8f2e1d8f.js",
       "static/chunks/app/page-feca1e98c2206964.js"
+    ],
+    "/Vecole/page": [
+      "static/chunks/webpack-c84e7b3dbc67fa68.js",
+      "static/chunks/fd9d1056-36036aadb8c8a4e4.js",
+      "static/chunks/23-3b25d91f599a1872.js",
+      "static/chunks/main-app-c5edb945d4468773.js",
+      "static/chunks/763-4b43ca8e8f2e1d8f.js",
+      "static/chunks/813-44f8fa1a9125bc41.js",
+      "static/chunks/app/Vecole/page-a5142b1400db15d5.js"
     ]
   }
 }

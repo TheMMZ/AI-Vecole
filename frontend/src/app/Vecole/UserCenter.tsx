@@ -29,7 +29,25 @@ export default function UserCenter() {
     setLoading(true);
     try {
       const res = await apiFetch('/api/users');
+      if (!res.ok) {
+        // Try to read body as text or json for useful message
+        let msg: string;
+        try {
+          const txt = await res.text();
+          msg = txt || `Server returned ${res.status}`;
+        } catch (e) {
+          msg = `Server returned ${res.status}`;
+        }
+        setError(msg);
+        setUsers([]);
+        return;
+      }
       const data = await res.json();
+      if (!Array.isArray(data)) {
+        setError('Unexpected response shape from /api/users');
+        setUsers([]);
+        return;
+      }
       setUsers(data || []);
     } catch (err: any) {
       setError(err?.message || 'Failed to load users');
@@ -46,11 +64,17 @@ export default function UserCenter() {
         // update
         const payload: any = { name: form.name, role: form.role };
         if (form.password) payload.password = form.password;
-        await apiFetch(`/api/users/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
+        {
+          const res = await apiFetch(`/api/users/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error((await res.text()) || `Update failed: ${res.status}`);
+        }
         setEditingId(null);
       } else {
         // create
-        await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(form) });
+        {
+          const res = await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(form) });
+          if (!res.ok) throw new Error((await res.text()) || `Create failed: ${res.status}`);
+        }
       }
       setForm(defaultForm);
       await fetchUsers();
@@ -67,7 +91,8 @@ export default function UserCenter() {
   async function handleSuspend(u: User) {
     // toggle suspended flag; server should interpret this and accept a body like { suspended: true }
     try {
-      await apiFetch(`/api/users/${u._id}`, { method: 'PUT', body: JSON.stringify({ suspended: !u.suspended }) });
+      const res = await apiFetch(`/api/users/${u._id}`, { method: 'PUT', body: JSON.stringify({ suspended: !u.suspended }) });
+      if (!res.ok) throw new Error((await res.text()) || `Failed to suspend: ${res.status}`);
       await fetchUsers();
     } catch (err: any) {
       setError(err?.message || 'Failed to suspend user');
@@ -77,7 +102,8 @@ export default function UserCenter() {
   async function handleDelete(u: User) {
     if (!confirm(`Delete user ${u.email || u.name}? This cannot be undone.`)) return;
     try {
-      await apiFetch(`/api/users/${u._id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/users/${u._id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.text()) || `Delete failed: ${res.status}`);
       await fetchUsers();
     } catch (err: any) {
       setError(err?.message || 'Failed to delete user');

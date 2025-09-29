@@ -1,13 +1,10 @@
-import express from "express";
-import { getAllUsers, getUserById, updateUser } from "../controllers/user";
+import { FastifyInstance } from "fastify";
+import { getAllUsers, getUserById, updateUser, createUser, deleteUser } from "../controllers/user";
 
-const router = express.Router();
-
-router.get("/", getAllUsers);
-
-router.get("/:id", getUserById);
-
-
-router.put(":id", updateUser);
-
-export default router;
+export default async function userRoutes(fastify: FastifyInstance) {
+	fastify.get('/api/users', async (req, reply) => await getAllUsers(req as any, reply as any));
+	fastify.get('/api/users/:id', async (req, reply) => await getUserById(req as any, reply as any));
+	fastify.post('/api/users', async (req, reply) => await createUser(req as any, reply as any));
+	fastify.put('/api/users/:id', async (req, reply) => await updateUser(req as any, reply as any));
+	fastify.delete('/api/users/:id', async (req, reply) => await deleteUser(req as any, reply as any));
+}

@@ -138,6 +138,15 @@ async function start() {
     console.error('Failed registering activities routes', err);
   }
 
+  try {
+    console.log('Registering user routes');
+    const userRoutes = (await import('./routes/userRoutes')).default;
+    await userRoutes(fastify);
+    console.log('Registered user routes');
+  } catch (err) {
+    console.error('Failed registering user routes', err);
+  }
+
   // Root route and health check
   fastify.get("/", async () => ({
     status: "API is running",
