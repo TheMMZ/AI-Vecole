@@ -34,7 +34,7 @@ export default function VecoleRoot() {
     // popstate: handle browser back/forward navigation
     const handlePopState = (e: PopStateEvent) => {
       if (!leaveConfirmRef.current) return;
-      const leave = window.confirm('You have unsaved changes or are leaving Vecole. Are you sure you want to leave?');
+      const leave = window.confirm('Are you sure you want to leave Vecole?');
       if (!leave) {
         // push the current state back so the user stays on the same page
         history.pushState(null, '', window.location.href);
