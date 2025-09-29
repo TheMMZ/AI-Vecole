@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents";
+type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents" | "users";
 type AppHeaderProps = {
   onNavigate?: (page: PageKey) => void;
 };
@@ -17,8 +17,10 @@ const navLinks: { name: string; page: PageKey }[] = [
 
 export default function AppHeader({ onNavigate }: AppHeaderProps) {
   const [username, setUsername] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
+    setIsAdmin(localStorage.getItem('role') === 'admin');
   }, []);
 
   const handleLogout = () => {
@@ -54,6 +56,18 @@ export default function AppHeader({ onNavigate }: AppHeaderProps) {
               </button>
             </li>
           ))}
+          {isAdmin ? (
+            <li>
+              <button
+                type="button"
+                className="text-base font-bold text-gray-700 hover:text-primary transition-colors bg-transparent border-none outline-none"
+                style={{ background: "none", border: "none", cursor: "pointer" }}
+                onClick={() => onNavigate && onNavigate('users')}
+              >
+                Users
+              </button>
+            </li>
+          ) : null}
         </ul>
       </nav>
       <div className="flex items-center gap-3">

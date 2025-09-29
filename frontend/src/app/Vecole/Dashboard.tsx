@@ -34,9 +34,10 @@ const StatsCard = ({ title, value, icon, color }: StatsCardProps) => {
 
 type DashboardProps = {
   onNavigate: (page: string) => void;
+  leaveConfirmRef?: React.MutableRefObject<boolean>;
 };
 
-export default function VecolePage({ onNavigate }: DashboardProps) {
+export default function VecolePage({ onNavigate, leaveConfirmRef }: DashboardProps) {
   // Scroll to top when navigating
   const handleNavigate = (page: string) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
