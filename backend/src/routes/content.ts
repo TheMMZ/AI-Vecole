@@ -80,20 +80,43 @@ async function contentRoutes(fastify: FastifyInstance) {
 
   // After client uploads to Storj using the returned key, client calls confirm to persist metadata
   fastify.post('/api/content/confirm', async (req, reply) => {
-    const body = req.body as any;
-    const { key, filename, uploadedBy, size, mimeType } = body || {};
-    if (!key || !filename) return reply.status(400).send({ error: 'key and filename required' });
-    // Build a fileUrl that frontend can use to request a download URL later
-    const fileUrl = `/storj/${key}`;
-    let uploadedById = undefined;
     try {
-      uploadedById = uploadedBy ? new (Content as any).mongoose.Types.ObjectId(uploadedBy) : new (Content as any).mongoose.Types.ObjectId();
-    } catch {
-      uploadedById = new (Content as any).mongoose.Types.ObjectId();
+      const body = req.body as any;
+      const { key, filename, uploadedBy, size, mimeType } = body || {};
+      if (!key || !filename) return reply.status(400).send({ error: 'key and filename required' });
+
+      // Warn if key doesn't follow the expected Contents/ prefix (not blocking)
+      try {
+        if (typeof key === 'string' && !key.startsWith('Contents/')) {
+          req.log?.warn?.({ key }, 'Storj key does not use expected Contents/ prefix');
+        }
+      } catch {}
+
+      // Build a fileUrl that frontend can use to request a download URL later
+      const fileUrl = `/storj/${key}`;
+      let uploadedById: any = undefined;
+      try {
+        // Prefer using mongoose Types from the model if available
+        const mongooseTypes = (Content as any).mongoose?.Types || require('mongoose').Types;
+        uploadedById = uploadedBy ? new mongooseTypes.ObjectId(uploadedBy) : new mongooseTypes.ObjectId();
+      } catch (innerErr) {
+        req.log?.warn?.(innerErr, 'Could not parse uploadedBy into ObjectId, using fallback');
+        const mongooseTypes = require('mongoose').Types;
+        uploadedById = new mongooseTypes.ObjectId();
+      }
+
+      const docData: any = { title: filename, fileUrl, uploadedBy: uploadedById };
+      if (typeof size === 'number') docData.size = size;
+      if (typeof mimeType === 'string') docData.mimeType = mimeType;
+
+      const content = new Content(docData);
+      await content.save();
+      return reply.send({ _id: content._id, filename: content.title, url: content.fileUrl, uploadedAt: content.createdAt, storageKey: key });
+    } catch (err: any) {
+      // Log full error server-side for debugging, but return a safe message to client
+      req.log?.error?.({ err }, 'Error in /api/content/confirm');
+      return reply.status(500).send({ error: 'Could not confirm uploaded file. Check server logs for details.' });
     }
-    const content = new Content({ title: filename, fileUrl, uploadedBy: uploadedById });
-    await content.save();
-    return reply.send({ _id: content._id, filename: content.title, url: content.fileUrl, uploadedAt: content.createdAt, storageKey: key });
   });
 
   // Generate a temporary download URL for a given Storj key
