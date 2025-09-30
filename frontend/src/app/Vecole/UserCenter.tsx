@@ -414,17 +414,30 @@ export default function UserCenter() {
         <Dialog open={showSuspendDialog} onClose={() => setShowSuspendDialog(false)}>
           <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
             <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
-              <Dialog.Title className="text-xl font-bold mb-4">Suspend User</Dialog.Title>
+               <Dialog.Title className="text-xl font-bold text-gray-900 mb-4">Suspend User</Dialog.Title>
               <p className="text-black mb-4">Choose suspension duration for <strong>{suspendTarget.email || suspendTarget.username}</strong>.</p>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <input type="radio" id="days" name="suspendType" checked={!suspendPermanent} onChange={() => setSuspendPermanent(false)} />
-                  <label htmlFor="days">Days</label>
-                  <input type="number" className="ml-2 px-2 py-1 border rounded" placeholder="Days" value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
+                   <input 
+                    type="radio" 
+                    id="days" 
+                    name="suspendType" 
+                    checked={!suspendPermanent} 
+                    onChange={() => setSuspendPermanent(false)} 
+                    className="text-[#456CBD]"
+                  />
+                  <label htmlFor="days" className="text-gray-700">Days</label>
+                  <input 
+                    type="number" 
+                    className="ml-2 px-2 py-1 border rounded text-gray-900" 
+                    placeholder="Days" 
+                    value={suspendDays} 
+                    onChange={e => setSuspendDays(e.target.value)} 
+                  />
                 </div>
                 <div className="flex items-center gap-3">
                   <input type="radio" id="perm" name="suspendType" checked={suspendPermanent} onChange={() => setSuspendPermanent(true)} />
-                  <label htmlFor="perm">Permanent</label>
+                  <label htmlFor="perm" className="text-gray-700">Permanent</label>
                 </div>
                 {suspendStatus && (
                   <div className={`p-3 rounded-lg ${suspendStatus.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-black'}`}>

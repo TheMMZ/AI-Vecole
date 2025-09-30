@@ -2,21 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
-  --foreground-rgb: 44, 36, 30; /* deep brown for text */
+  --foreground-rgb: 0, 0, 0; /* black text */
   --background-end-rgb: 240, 235, 225;
   --accent-brown: #6B4F36;
   --highlight-green: #22c55e;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-end-rgb: 44, 36, 30;
-    --accent-brown: #bfae9c;
-    --highlight-green: #22c55e;
-  }
 }
 
 body {
