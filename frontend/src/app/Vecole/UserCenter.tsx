@@ -29,6 +29,7 @@ export default function UserCenter() {
   const [suspendTarget, setSuspendTarget] = useState<User | null>(null);
   const [suspendDays, setSuspendDays] = useState<string>('');
   const [suspendPermanent, setSuspendPermanent] = useState(false);
+  const [suspendStatus, setSuspendStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -73,14 +74,14 @@ export default function UserCenter() {
         const payload: any = { username: form.username, role: form.role };
         if (form.password) payload.password = form.password;
         {
-          const res = await apiFetch(`/api/users/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
+          const res = await apiFetch(`/api/users/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           if (!res.ok) throw new Error((await res.text()) || `Update failed: ${res.status}`);
         }
         setEditingId(null);
       } else {
         // create
         {
-          const res = await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(form) });
+          const res = await apiFetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
           if (!res.ok) throw new Error((await res.text()) || `Create failed: ${res.status}`);
         }
       }
@@ -108,11 +109,12 @@ export default function UserCenter() {
     setSuspendDays('');
     setSuspendPermanent(false);
     setShowSuspendDialog(true);
+    setSuspendStatus(null);
   }
 
   async function unsuspendUser(u: User) {
     try {
-      const res = await apiFetch(`/api/users/${u._id}`, { method: 'PUT', body: JSON.stringify({ suspended: false, suspendedUntil: null }) });
+      const res = await apiFetch(`/api/users/${u._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suspended: false, suspendedUntil: null }) });
       if (!res.ok) throw new Error((await res.text()) || `Failed to unsuspend: ${res.status}`);
       await fetchUsers();
     } catch (err: any) {
@@ -128,17 +130,21 @@ export default function UserCenter() {
         const daysNum = parseInt(suspendDays || '0', 10);
         if (isNaN(daysNum) || daysNum <= 0) {
           setError('Please enter a valid number of days or choose Permanent');
+          setSuspendStatus({ message: 'Please enter a valid number of days or choose Permanent', isError: true });
           return;
         }
         suspendedUntil = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
       }
-      const res = await apiFetch(`/api/users/${suspendTarget._id}`, { method: 'PUT', body: JSON.stringify({ suspended: true, suspendedUntil }) });
-      if (!res.ok) throw new Error((await res.text()) || `Failed to suspend: ${res.status}`);
-      setShowSuspendDialog(false);
-      setSuspendTarget(null);
-      await fetchUsers();
+      const res = await apiFetch(`/api/users/${suspendTarget._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suspended: true, suspendedUntil }) });
+      if (!res.ok) {
+        const txt = await res.text();
+        setSuspendStatus({ message: txt || `Failed to suspend: ${res.status}`, isError: true });
+      } else {
+        setSuspendStatus({ message: 'User suspended successfully', isError: false });
+        await fetchUsers();
+      }
     } catch (err: any) {
-      setError(err?.message || 'Failed to suspend user');
+      setSuspendStatus({ message: err?.message || 'Failed to suspend user', isError: true });
     }
   }
 
@@ -397,7 +403,7 @@ export default function UserCenter() {
           <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
             <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
               <Dialog.Title className="text-xl font-bold mb-4">Suspend User</Dialog.Title>
-              <p className="text-gray-700 mb-4">Choose suspension duration for <strong>{suspendTarget.email || suspendTarget.username}</strong>.</p>
+              <p className="text-black mb-4">Choose suspension duration for <strong>{suspendTarget.email || suspendTarget.username}</strong>.</p>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <input type="radio" id="days" name="suspendType" checked={!suspendPermanent} onChange={() => setSuspendPermanent(false)} />
@@ -408,9 +414,13 @@ export default function UserCenter() {
                   <input type="radio" id="perm" name="suspendType" checked={suspendPermanent} onChange={() => setSuspendPermanent(true)} />
                   <label htmlFor="perm">Permanent</label>
                 </div>
-                {error && <div className="p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+                {suspendStatus && (
+                  <div className={`p-3 rounded-lg ${suspendStatus.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-black'}`}>
+                    {suspendStatus.message}
+                  </div>
+                )}
                 <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={() => { setShowSuspendDialog(false); setSuspendTarget(null); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                  <button onClick={() => { setShowSuspendDialog(false); setSuspendTarget(null); setSuspendStatus(null); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
                   <button onClick={handleConfirmSuspend} className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Suspend</button>
                 </div>
               </div>
