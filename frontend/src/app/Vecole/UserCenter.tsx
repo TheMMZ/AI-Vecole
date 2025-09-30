@@ -100,11 +100,7 @@ export default function UserCenter() {
 
   // Open suspend dialog to choose duration (days) or make permanent.
   function openSuspendDialog(u: User) {
-    // If already suspended, just unsuspend immediately
-    if (u.suspended) {
-      unsuspendUser(u);
-      return;
-    }
+    // Open dialog (require explicit Unsuspend action inside dialog)
     setSuspendTarget(u);
     setSuspendDays('');
     setSuspendPermanent(false);
@@ -145,6 +141,22 @@ export default function UserCenter() {
       }
     } catch (err: any) {
       setSuspendStatus({ message: err?.message || 'Failed to suspend user', isError: true });
+    }
+  }
+
+  async function handleUnsuspendFromDialog() {
+    if (!suspendTarget) return;
+    try {
+      const res = await apiFetch(`/api/users/${suspendTarget._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suspended: false, suspendedUntil: null }) });
+      if (!res.ok) {
+        const txt = await res.text();
+        setSuspendStatus({ message: txt || `Failed to unsuspend: ${res.status}`, isError: true });
+      } else {
+        setSuspendStatus({ message: 'User unsuspended successfully', isError: false });
+        await fetchUsers();
+      }
+    } catch (err: any) {
+      setSuspendStatus({ message: err?.message || 'Failed to unsuspend user', isError: true });
     }
   }
 
@@ -421,7 +433,11 @@ export default function UserCenter() {
                 )}
                 <div className="flex justify-end gap-2 mt-4">
                   <button onClick={() => { setShowSuspendDialog(false); setSuspendTarget(null); setSuspendStatus(null); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
-                  <button onClick={handleConfirmSuspend} className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Suspend</button>
+                  {suspendTarget.suspended ? (
+                    <button onClick={handleUnsuspendFromDialog} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Unsuspend</button>
+                  ) : (
+                    <button onClick={handleConfirmSuspend} className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Suspend</button>
+                  )}
                 </div>
               </div>
             </Dialog.Panel>

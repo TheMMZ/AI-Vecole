@@ -57,6 +57,18 @@ export default async function authRoutes(fastify: FastifyInstance, getDb: () => 
     }
     if (!valid) return reply.code(400).send({ error: "Invalid credentials" });
 
+    // Block suspended users with clear message
+    const suspended = (user as any).suspended;
+    const suspendedUntil = (user as any).suspendedUntil;
+    if (suspended) {
+      if (suspendedUntil) {
+        const until = new Date(suspendedUntil);
+        const formatted = `${until.getMonth() + 1}/${until.getDate()}/${until.getFullYear()}`;
+        return reply.code(403).send({ error: `Your account is suspended until ${formatted}` });
+      }
+      return reply.code(403).send({ error: `Your account is suspended permanently` });
+    }
+
     return {
       token: createToken(user._id.toString()),
       user: {
