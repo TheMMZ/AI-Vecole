@@ -18,7 +18,7 @@ export async function getUploadUrl(req: FastifyRequest, reply: FastifyReply) {
   const contentType = body?.contentType || 'application/pdf';
   if (!filename) return reply.status(400).send({ error: 'filename required' });
 
-  const key = `pdfs/${Date.now()}-${filename}`;
+  const key = `Contents/${Date.now()}-${filename}`;
 
   const cmd = new PutObjectCommand({
     Bucket: process.env.STORJ_BUCKET,
