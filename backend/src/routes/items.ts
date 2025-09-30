@@ -80,8 +80,12 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
           return JSON.parse(localResp.payload);
         })();
         const downloadUrl = presignResp.url;
-        const fetch = (await import('node-fetch')).default;
-        const r = await fetch(downloadUrl);
+        // Use global fetch (Node 18+) if available, otherwise fail with a clear message
+        const fetchFn: any = (globalThis as any).fetch;
+        if (!fetchFn) {
+          throw new Error('No fetch implementation available on the server (Node 18+ required)');
+        }
+        const r = await fetchFn(downloadUrl);
         if (!r.ok) throw new Error('Failed to download PDF from storage');
         const buffer = await r.arrayBuffer();
         pdfText = await extractPdfText(Buffer.from(buffer));
