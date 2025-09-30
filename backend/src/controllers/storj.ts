@@ -15,10 +15,27 @@ const s3 = new S3Client({
 export async function getUploadUrl(req: FastifyRequest, reply: FastifyReply) {
   const body = req.body as any;
   const filename = body?.filename;
+  const folder = body?.folder as string | undefined; // optional folder like 'Profils' or 'Contents'
+  const userId = body?.userId as string | undefined; // optional userId to name profile images
   const contentType = body?.contentType || 'application/pdf';
   if (!filename) return reply.status(400).send({ error: 'filename required' });
 
-  const key = `Contents/${Date.now()}-${filename}`;
+  // If caller requested a profile upload and provided a userId, use Profils/<userId>.<ext>
+  let key: string;
+  try {
+    if (folder && folder === 'Profils' && userId) {
+      // preserve extension from filename
+      const ext = filename.includes('.') ? filename.split('.').pop() : '';
+      const safeExt = ext ? `.${ext}` : '';
+      key = `Profils/${userId}${safeExt}`;
+    } else {
+      // default to Contents/<timestamp>-<filename> for content uploads
+      key = `Contents/${Date.now()}-${filename}`;
+    }
+  } catch (e) {
+    // fallback
+    key = `Contents/${Date.now()}-${filename}`;
+  }
 
   const cmd = new PutObjectCommand({
     Bucket: process.env.STORJ_BUCKET,

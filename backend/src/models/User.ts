@@ -4,6 +4,7 @@ export interface IUser extends Document {
   username: string;
   email: string;
   passwordHash: string;
+  profilePic?: string | null;
   role: "teacher" | "admin";
   suspended?: boolean;
   suspendedUntil?: Date | null;
@@ -15,6 +16,7 @@ const UserSchema = new Schema<IUser>({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true, index: true },
   passwordHash: { type: String, required: true },
+  profilePic: { type: String, default: null },
   role: { type: String, enum: ["teacher", "admin"], default: "teacher" },
   suspended: { type: Boolean, default: false },
   suspendedUntil: { type: Date, default: null },
