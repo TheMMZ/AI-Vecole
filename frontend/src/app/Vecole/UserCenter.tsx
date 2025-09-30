@@ -7,14 +7,15 @@ import { motion } from 'framer-motion';
 
 type User = {
   _id: string;
-  name: string;
+  username?: string;
   email: string;
   role: string;
   avatarUrl?: string;
   suspended?: boolean;
+  suspendedUntil?: string | Date | null;
 };
 
-const defaultForm = { email: '', name: '', password: '', role: 'user' };
+const defaultForm = { email: '', username: '', password: '', role: 'teacher' };
 
 export default function UserCenter() {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,6 +25,10 @@ export default function UserCenter() {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<User | null>(null);
+  const [suspendDays, setSuspendDays] = useState<string>('');
+  const [suspendPermanent, setSuspendPermanent] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -65,7 +70,7 @@ export default function UserCenter() {
     try {
       if (editingId) {
         // update
-        const payload: any = { name: form.name, role: form.role };
+        const payload: any = { username: form.username, role: form.role };
         if (form.password) payload.password = form.password;
         {
           const res = await apiFetch(`/api/users/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
@@ -88,13 +93,49 @@ export default function UserCenter() {
 
   function startEdit(u: User) {
     setEditingId(u._id);
-    setForm({ email: u.email, name: u.name, password: '', role: u.role });
+    const displayName = u.username || '';
+    setForm({ email: u.email, username: displayName, password: '', role: u.role });
   }
 
-  async function handleSuspend(u: User) {
+  // Open suspend dialog to choose duration (days) or make permanent.
+  function openSuspendDialog(u: User) {
+    // If already suspended, just unsuspend immediately
+    if (u.suspended) {
+      unsuspendUser(u);
+      return;
+    }
+    setSuspendTarget(u);
+    setSuspendDays('');
+    setSuspendPermanent(false);
+    setShowSuspendDialog(true);
+  }
+
+  async function unsuspendUser(u: User) {
     try {
-      const res = await apiFetch(`/api/users/${u._id}`, { method: 'PUT', body: JSON.stringify({ suspended: !u.suspended }) });
+      const res = await apiFetch(`/api/users/${u._id}`, { method: 'PUT', body: JSON.stringify({ suspended: false, suspendedUntil: null }) });
+      if (!res.ok) throw new Error((await res.text()) || `Failed to unsuspend: ${res.status}`);
+      await fetchUsers();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to unsuspend user');
+    }
+  }
+
+  async function handleConfirmSuspend() {
+    if (!suspendTarget) return;
+    try {
+      let suspendedUntil: string | null = null;
+      if (!suspendPermanent) {
+        const daysNum = parseInt(suspendDays || '0', 10);
+        if (isNaN(daysNum) || daysNum <= 0) {
+          setError('Please enter a valid number of days or choose Permanent');
+          return;
+        }
+        suspendedUntil = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+      }
+      const res = await apiFetch(`/api/users/${suspendTarget._id}`, { method: 'PUT', body: JSON.stringify({ suspended: true, suspendedUntil }) });
       if (!res.ok) throw new Error((await res.text()) || `Failed to suspend: ${res.status}`);
+      setShowSuspendDialog(false);
+      setSuspendTarget(null);
       await fetchUsers();
     } catch (err: any) {
       setError(err?.message || 'Failed to suspend user');
@@ -163,8 +204,8 @@ export default function UserCenter() {
               <input
                 id="name"
                 type="text"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
+                value={form.username}
+                onChange={e => setForm({ ...form, username: e.target.value })}
                 required
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black placeholder-black"
                 placeholder="Username"
@@ -198,6 +239,7 @@ export default function UserCenter() {
                 onChange={e => setForm({ ...form, role: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black"
               >
+                <option value="user">User</option>
                 <option value="admin">Admin</option>
                 <option value="teacher">Teacher</option>
               </select>
@@ -274,11 +316,14 @@ export default function UserCenter() {
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">👤</span>
                     <div>
-                      <h3 className="font-bold text-lg text-gray-800">{user.name}</h3>
+                      <h3 className="font-bold text-lg text-gray-800">{user.username || user.email.split('@')[0]}</h3>
                       <p className="text-gray-600 mt-1">{user.email}</p>
                       <div className="flex gap-4 mt-2 text-sm text-gray-500">
                         <span>Role: {user.role}</span>
                         <span>Status: {user.suspended ? 'Suspended' : 'Active'}</span>
+                        {user.suspended && user.suspendedUntil && (
+                          <span>Until: {new Date(user.suspendedUntil as any).toLocaleString()}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -293,7 +338,7 @@ export default function UserCenter() {
                       </svg>
                     </button>
                     <button
-                      onClick={() => handleSuspend(user)}
+                      onClick={() => openSuspendDialog(user)}
                       className="p-2 text-yellow-600 hover:bg-yellow-600 hover:bg-opacity-10 rounded-full transition-colors"
                       title={user.suspended ? 'Unsuspend' : 'Suspend'}
                     >
@@ -325,7 +370,7 @@ export default function UserCenter() {
             <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
               <Dialog.Title className="text-xl font-bold mb-4">Confirm Delete</Dialog.Title>
               <p className="text-gray-700 mb-6">
-                Are you sure you want to delete user <strong>{userToDelete.email || userToDelete.name}</strong>? This action cannot be undone.
+                Are you sure you want to delete user <strong>{userToDelete.email || userToDelete.username}</strong>? This action cannot be undone.
               </p>
               <div className="flex justify-end gap-2">
                 <button
@@ -340,6 +385,34 @@ export default function UserCenter() {
                 >
                   Delete User
                 </button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Suspend Confirmation Dialog */}
+      {showSuspendDialog && suspendTarget && (
+        <Dialog open={showSuspendDialog} onClose={() => setShowSuspendDialog(false)}>
+          <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
+            <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+              <Dialog.Title className="text-xl font-bold mb-4">Suspend User</Dialog.Title>
+              <p className="text-gray-700 mb-4">Choose suspension duration for <strong>{suspendTarget.email || suspendTarget.username}</strong>.</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <input type="radio" id="days" name="suspendType" checked={!suspendPermanent} onChange={() => setSuspendPermanent(false)} />
+                  <label htmlFor="days">Days</label>
+                  <input type="number" className="ml-2 px-2 py-1 border rounded" placeholder="Days" value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="radio" id="perm" name="suspendType" checked={suspendPermanent} onChange={() => setSuspendPermanent(true)} />
+                  <label htmlFor="perm">Permanent</label>
+                </div>
+                {error && <div className="p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+                <div className="flex justify-end gap-2 mt-4">
+                  <button onClick={() => { setShowSuspendDialog(false); setSuspendTarget(null); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                  <button onClick={handleConfirmSuspend} className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Suspend</button>
+                </div>
               </div>
             </Dialog.Panel>
           </div>
