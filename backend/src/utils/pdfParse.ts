@@ -1,5 +1,6 @@
 import fs from "fs";
-import pdfParse from "pdf-parse";
+// Use require to avoid TypeScript declaration issues when running with ts-node locally
+const pdfParse: any = require("pdf-parse");
 
 /**
  * Extracts text from a PDF file at the given path.
