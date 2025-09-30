@@ -47,6 +47,42 @@ export default function Contents() {
     }
   };
 
+  const openStorjFile = async (fileUrl: string) => {
+    try {
+      if (!fileUrl.startsWith('/storj/')) {
+        // Not a storj URL — open absolute
+        window.open(`${apiBase()}${fileUrl}`, '_blank');
+        return;
+      }
+      const key = fileUrl.replace(/^\/storj\//, '');
+      // Request presigned download URL from backend
+      const res = await apiFetch('/api/content/download-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Could not get download URL');
+      }
+      const data = await res.json();
+      const downloadUrl = data.url;
+      if (!downloadUrl) throw new Error('No download URL returned');
+
+      // Fetch the PDF as a blob and open it in a new tab using an object URL
+      const r = await fetch(downloadUrl);
+      if (!r.ok) throw new Error('Failed to download file from storage');
+      const blob = await r.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      // Revoke the object URL after a short delay to allow the browser to load it
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60 * 1000);
+    } catch (err: any) {
+      console.error('Error opening storj file', err);
+      setError(err?.message || 'Failed to open file');
+    }
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
@@ -255,9 +291,8 @@ export default function Contents() {
                     </div>
                     <div>
                       <a
-                        href={`${apiBase()}${file.url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openStorjFile(file.url); }}
                         className="font-medium text-[#456CBD] hover:underline text-lg"
                         title="Open PDF"
                       >
