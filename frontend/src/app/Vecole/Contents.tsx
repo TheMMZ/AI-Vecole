@@ -66,28 +66,60 @@ export default function Contents() {
     setIsLoading(true);
     setError("");
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("title", fileTitle);
-      // Add uploadedBy from localStorage (userId)
-      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-      if (userId) {
-        formData.append("uploadedBy", userId);
-      }
-      const res = await apiFetch("/api/content/upload", {
+      // First try presigned upload flow (Storj): request an upload URL from backend
+      const filename = selectedFile.name;
+      const presignRes = await apiFetch("/api/content/upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, contentType: selectedFile.type || "application/pdf" }),
       });
-      const data = await res.json();
-      if (res.ok) {
+
+      if (presignRes.ok) {
+        const presignData = await presignRes.json();
+        const { url, key } = presignData;
+        // Upload file directly to the presigned URL
+        const uploadRes = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": selectedFile.type || "application/pdf" },
+          body: selectedFile,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Upload to storage failed");
+        }
+        // Confirm with backend to persist metadata (fileUrl will be /storj/<key>)
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        const confirmRes = await apiFetch("/api/content/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, filename: fileTitle || filename, uploadedBy: userId, size: selectedFile.size, mimeType: selectedFile.type }),
+        });
+        const confirmData = await confirmRes.json();
+        if (!confirmRes.ok) {
+          throw new Error(confirmData.error || "Could not confirm upload");
+        }
         fetchFiles();
         setSelectedFile(null);
         setFileTitle("");
       } else {
-        setError(data.message || "Failed to upload file");
+        // Fallback to multipart upload endpoint (server-side save to /uploads)
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("title", fileTitle);
+        const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        if (userId) formData.append("uploadedBy", userId);
+        const res = await apiFetch("/api/content/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          fetchFiles();
+          setSelectedFile(null);
+          setFileTitle("");
+        } else {
+          setError(data.message || "Failed to upload file");
+        }
       }
     } catch (err) {
-      setError("Network error occurred");
+      console.error(err);
+      setError((err as any)?.message || "Network error occurred");
     } finally {
       setIsLoading(false);
     }
