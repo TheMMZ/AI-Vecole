@@ -22,7 +22,7 @@ export default async function authRoutes(fastify: FastifyInstance, getDb: () => 
     const createdAt = new Date();
     const result = await db.collection("users").insertOne({
       email,
-      password: hashed,
+      passwordHash: hashed,
       username,
       role: role || "teacher",
       createdAt
@@ -44,7 +44,17 @@ export default async function authRoutes(fastify: FastifyInstance, getDb: () => 
     const user = await db.collection("users").findOne({ email });
     if (!user) return reply.code(400).send({ error: "Invalid credentials" });
 
-    const valid = await comparePassword(password, user.password);
+    // Support older records that might have 'password' or the newer 'passwordHash'.
+    const hashField = (user as any).passwordHash || (user as any).password;
+    if (!hashField) return reply.code(400).send({ error: "Invalid credentials" });
+
+    let valid = false;
+    try {
+      valid = await comparePassword(password, hashField);
+    } catch (e) {
+      // If bcrypt compare fails for any reason, treat as invalid credentials rather than throwing 500.
+      return reply.code(400).send({ error: "Invalid credentials" });
+    }
     if (!valid) return reply.code(400).send({ error: "Invalid credentials" });
 
     return {

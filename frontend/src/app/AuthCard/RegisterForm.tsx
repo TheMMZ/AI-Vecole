@@ -102,14 +102,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
         <div className="mb-4">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
-            htmlFor="username"
+            htmlFor="register-username"
           >
             Username
           </label>
           <input
             ref={usernameRef}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="username"
+            id="register-username"
             type="text"
             placeholder="Username"
           />
@@ -117,14 +117,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
         <div className="mb-4">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
-            htmlFor="email"
+            htmlFor="register-email"
           >
             Email
           </label>
           <input
             ref={emailRef}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="email"
+            id="register-email"
             type="email"
             placeholder="Email"
           />
@@ -132,7 +132,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
         <div className="mb-4">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
-            htmlFor="password"
+            htmlFor="register-password"
           >
             Password
           </label>
@@ -140,7 +140,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
             <input
               ref={passwordRef}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline pr-10"
-              id="password"
+              id="register-password"
               type={showPassword ? "text" : "password"}
               placeholder="********"
             />
@@ -157,7 +157,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
         <div className="mb-6">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
-            htmlFor="confirm-password"
+            htmlFor="register-confirm-password"
           >
             Confirm Password
           </label>
@@ -165,7 +165,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onFlip }) => {
             <input
               ref={confirmPasswordRef}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline pr-10"
-              id="confirm-password"
+              id="register-confirm-password"
               type={showPassword ? "text" : "password"}
               placeholder="********"
             />
