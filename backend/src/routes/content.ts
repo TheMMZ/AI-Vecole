@@ -78,6 +78,32 @@ async function contentRoutes(fastify: FastifyInstance) {
     return getUploadUrl(req, reply);
   });
 
+  // Redirect route for browser-friendly access to storj objects.
+  // Example: GET /storj/Contents/12345-file.pdf -> redirects to a presigned GET URL.
+  fastify.get('/storj/*', async (req, reply) => {
+    try {
+      // Extract the key from the raw URL
+      const rawUrl = (req as any).url as string;
+      const key = decodeURIComponent(rawUrl.replace(/^\/storj\//, ''));
+      if (!key) return reply.status(400).send({ error: 'key required' });
+
+      // Call our own download-url endpoint internally to get a presigned URL
+      const injected = await fastify.inject({ method: 'POST', url: '/api/content/download-url', payload: { key } });
+      if (injected.statusCode !== 200) {
+        req.log?.error?.({ statusCode: injected.statusCode, body: injected.payload }, 'Failed to get presigned download URL');
+        return reply.status(404).send({ error: 'File not found or not accessible' });
+      }
+      const body = JSON.parse(injected.payload as string);
+      const downloadUrl = body?.url;
+      if (!downloadUrl) return reply.status(404).send({ error: 'Download URL not available' });
+  // Redirect the browser to the presigned URL (temporary)
+  return reply.redirect(downloadUrl as string);
+    } catch (err) {
+      req.log?.error?.(err, 'Error handling /storj/* redirect');
+      return reply.status(500).send({ error: 'Failed to generate download URL' });
+    }
+  });
+
   // After client uploads to Storj using the returned key, client calls confirm to persist metadata
   fastify.post('/api/content/confirm', async (req, reply) => {
     try {
