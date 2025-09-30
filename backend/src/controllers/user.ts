@@ -57,6 +57,11 @@ export async function createUser(req: Request, res: Response) {
     const user = await User.create(createPayload);
     res.status(201).json(user);
   } catch (err) {
+    // Handle duplicate email key error gracefully
+    const anyErr: any = err;
+    if (anyErr && anyErr.code === 11000) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
     const message = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: message });
   }
