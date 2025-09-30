@@ -6,8 +6,8 @@ node_modules/
 .env.local
 .env.*.local
 
-# Optional: ignore PDFs if you don't want uploaded documents in the repo
-# *.pdf
+
+*.pdf
 
 # Build outputs
 dist/
