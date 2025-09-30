@@ -198,9 +198,8 @@ export default function UserCenter() {
                 onChange={e => setForm({ ...form, role: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-black"
               >
-                <option value="user">User</option>
-                <option value="editor">Editor</option>
                 <option value="admin">Admin</option>
+                <option value="teacher">Teacher</option>
               </select>
             </div>
           </div>
