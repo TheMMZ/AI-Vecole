@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import AppHeader from "../components/AppHeader";
 import AppFooter from "../components/AppFooter";
-import ProfileModal from "../components/ProfileModal";
 import Dashboard from "./Dashboard";
 import UserCenter from "./UserCenter";
 import Grades from "./Grades";
@@ -12,7 +11,7 @@ import Item from "./Item";
 import Standard from "./Standard";
 import Contents from "./Contents";
 
-type PageKey = "dashboard" | "grades" | "banks" | "items" | "standards" | "contents" | "users" | "Profile";
+type PageKey = "dashboard" | "grades" | "banks" | "items" | "standards" | "contents" | "users";
 
 
 // componentsWithNav defined below will be used to render pages
@@ -61,12 +60,11 @@ export default function VecoleRoot() {
     standards: <Standard />,
     contents: <Contents />,
     users: <UserCenter />,
-    Profile: <ProfileModal open={true} onClose={() => setPage("dashboard")} />
   };
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <AppHeader onNavigate={(p) => {
-        if (p === "grades" || p === "banks" || p === "items" || p === "standards" || p === "contents" || p === 'users' || p === 'Profile') setPage(p as PageKey);
+        if (p === "grades" || p === "banks" || p === "items" || p === "standards" || p === "contents" || p === 'users') setPage(p as PageKey);
         else setPage("dashboard");
       }} />
       <main className="flex-1">

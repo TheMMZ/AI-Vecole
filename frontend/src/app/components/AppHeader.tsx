@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents" | "users" | "Profile";
+type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents" | "users";
 type AppHeaderProps = {
   onNavigate?: (page: PageKey) => void;
 };
@@ -71,18 +71,11 @@ export default function AppHeader({ onNavigate }: AppHeaderProps) {
         </ul>
       </nav>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className="text-base font-bold text-gray-900 hover:text-gray-700 hover:underline transition-colors bg-transparent border-none outline-none cursor-pointer"
-          style={{ background: "none", border: "none" }}
-          onClick={() => onNavigate && onNavigate('Profile')}
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#456CBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#456CBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
-          </svg>
-          <span className="font-semibold text-gray-700">{username}</span>
-        </button>
+        </svg>
+        <span className="font-semibold text-gray-700">{username}</span>
         <button
           onClick={handleLogout}
           className="ml-2 px-3 py-1 rounded bg-primary text-white font-semibold hover:bg-secondary transition-colors"
