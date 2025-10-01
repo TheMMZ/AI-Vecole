@@ -36,9 +36,13 @@ export async function updateUser(req: Request, res: Response) {
     if (updates.suspendedUntil && typeof updates.suspendedUntil === 'string') {
       updates.suspendedUntil = new Date(updates.suspendedUntil);
     }
-    // If profilePic is being updated (or cleared), delete the old one from storj
+    // Only delete the old profilePic when the client explicitly provided a
+    // `profilePic` field in the update payload (either new value or null).
+    // This avoids deleting the stored picture when unrelated fields (password,
+    // username) are updated without touching profilePic.
+    const incomingHasProfilePic = Object.prototype.hasOwnProperty.call(req.body || {}, 'profilePic');
     const existing = await User.findById(req.params.id);
-    if (existing) {
+    if (existing && incomingHasProfilePic) {
       const oldPic = existing.profilePic as string | undefined | null;
       const newPic = updates.profilePic as string | undefined | null;
       if (oldPic && oldPic !== newPic) {
