@@ -96,7 +96,7 @@ export default function ProfileModal({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={onClose}>
       <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
-        <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+  <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
           <Dialog.Title className="text-xl font-bold text-gray-800 mb-6">Edit Profile</Dialog.Title>
           
           <div className="space-y-4">
@@ -154,7 +154,7 @@ export default function ProfileModal({ open, onClose }: Props) {
               />
               {previewUrl && (
                 <div className="mt-2">
-                  <img src={previewUrl.startsWith('/') ? `${location.origin}${previewUrl}` : previewUrl} alt="preview" className="w-28 h-28 object-cover rounded" />
+                  <img src={previewUrl.startsWith('/') ? `${location.origin}${previewUrl}` : previewUrl} alt="preview" className="w-40 h-40 object-cover rounded" />
                 </div>
               )}
             </div>
