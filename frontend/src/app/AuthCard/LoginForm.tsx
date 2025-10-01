@@ -45,6 +45,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onFlip }) => {
       if (res.ok) {
         if (data.user) {
           if (data.user.username) localStorage.setItem("username", data.user.username);
+          if (data.user.email) localStorage.setItem("email", data.user.email);
           if (data.user.role) localStorage.setItem("role", data.user.role);
           if (data.user._id) localStorage.setItem("userId", data.user._id);
           if (data.user.profilePic) localStorage.setItem('profilePic', data.user.profilePic);

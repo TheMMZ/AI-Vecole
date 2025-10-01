@@ -75,7 +75,9 @@ export default async function authRoutes(fastify: FastifyInstance, getDb: () => 
         _id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        // include profilePic if present so frontend can persist and display it
+        profilePic: (user as any).profilePic || null,
       }
     };
   });
