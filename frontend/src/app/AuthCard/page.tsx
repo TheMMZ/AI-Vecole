@@ -2,11 +2,13 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useRef } from 'react';
 import { useConfirm } from '../components/ConfirmProvider';
+import { useRouter } from 'next/navigation';
 
 const AuthCard = dynamic(() => import('./AuthCard'), { ssr: false });
 
 export default function AuthCardPage() {
   const confirm = useConfirm();
+  const router = useRouter();
   const seqRef = useRef<number | null>(null);
   const handlingRef = useRef(false);
 
@@ -51,7 +53,18 @@ export default function AuthCardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f3f8fc]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f3f8fc] relative">
+      {/* Page-level return button (top-left) */}
+      <button
+        onClick={() => router.push('/')}
+        aria-label="Return to main page"
+        className="absolute left-4 top-4 z-50 inline-flex items-center gap-2 px-3 py-2 bg-white shadow rounded-full text-sm text-gray-700 hover:bg-gray-100"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+          <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L6.414 9H17a1 1 0 110 2H6.414l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd" />
+        </svg>
+        <span className="hidden sm:inline">Home</span>
+      </button>
       <AuthCard />
     </div>
   );
