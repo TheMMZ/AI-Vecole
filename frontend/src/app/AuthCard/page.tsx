@@ -1,5 +1,6 @@
-"use client";
-import AuthCard from "./AuthCard";
+import dynamic from 'next/dynamic';
+
+const AuthCard = dynamic(() => import('./AuthCard'), { ssr: false });
 
 export default function AuthCardPage() {
   return (
