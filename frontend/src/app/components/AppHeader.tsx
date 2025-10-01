@@ -36,6 +36,8 @@ export default function AppHeader({ onNavigate, onOpenProfile }: AppHeaderProps)
   }, []);
 
   const handleLogout = () => {
+    const ok = confirm('Are you sure you want to log out?');
+    if (!ok) return;
     localStorage.clear();
     window.location.href = "/";
   };
