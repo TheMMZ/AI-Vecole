@@ -23,20 +23,19 @@ const AuthCard: React.FC<AuthCardProps> = () => {
   };
 
   return (
-    <div className="perspective-1000 w-full max-w-md h-[540px] mx-auto">
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
-        >
-          <LoginForm onFlip={handleFlip} />
-          <RegisterForm onFlip={handleFlip} />
-        </div>
-        <button
-          onClick={handleReturnToMain}
-          className="text-sm text-gray-600 hover:text-gray-800 underline"
-        >
-          Return to main page
-        </button>
+    <div className="perspective-1000 w-full max-w-md h-[540px] mx-auto relative">
+      {/* Top-left return button, absolute so it doesn't affect card sizing */}
+      <button
+        onClick={handleReturnToMain}
+        className="absolute left-3 top-3 text-sm text-gray-600 hover:text-gray-800 underline z-10"
+      >
+        Return
+      </button>
+      <div
+        className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
+      >
+        <LoginForm onFlip={handleFlip} />
+        <RegisterForm onFlip={handleFlip} />
       </div>
     </div>
   );
