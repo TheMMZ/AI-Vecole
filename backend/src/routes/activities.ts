@@ -9,9 +9,21 @@ export default async function activitiesRoutes(fastify: FastifyInstance) {
       const { verifyToken } = require("../utils/auth");
       const payload = verifyToken(authHeader);
       const userId = payload?.id;
-      // If user is admin, return everything. Otherwise return activities that are public (no actor) or owned by the user.
+      // If user is admin, return everything. Our JWT currently only stores the user id,
+      // so fetch the user record to determine role when a token is present.
       let filter = {} as any;
-      if (payload && payload.role === 'admin') {
+      let isAdmin = false;
+      try {
+        if (userId) {
+          const User = require('../models/User').default;
+          const user = await User.findById(userId).select('role');
+          if (user && (user as any).role === 'admin') isAdmin = true;
+        }
+      } catch (e) {
+        // ignore lookup errors and fall back to non-admin behavior
+      }
+
+      if (isAdmin) {
         filter = {};
       } else if (userId) {
         filter = { $or: [{ actor: userId }, { actor: { $exists: false } }, { actor: null }] };
