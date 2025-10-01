@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../lib/api";
+import { Dialog } from "@headlessui/react";
+import { motion } from "framer-motion";
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -10,20 +12,36 @@ export default function ProfileModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    const stored = typeof window !== 'undefined' ? { username: localStorage.getItem('username'), email: localStorage.getItem('email') } : null;
+    const stored = typeof window !== 'undefined' ? { username: localStorage.getItem('username'), email: localStorage.getItem('email'), profilePic: localStorage.getItem('profilePic') } : null;
     setUsername(stored?.username || "");
     setEmail(stored?.email || "");
+    setPreviewUrl(stored?.profilePic || null);
   }, [open]);
 
   if (!open) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
+    const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    if (!f.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+    setError(null);
+    setFile(f);
+    // show local preview
+    try { if (previewUrl) URL.revokeObjectURL(previewUrl); } catch(e){}
+    const url = URL.createObjectURL(f);
+    setPreviewUrl(url);
   };
 
   const handleSave = async () => {
@@ -76,35 +94,131 @@ export default function ProfileModal({ open, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h3 className="text-xl font-semibold mb-4">Profile</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input type="text" readOnly value={email} className="w-full px-3 py-2 rounded border" />
+    <Dialog open={open} onClose={onClose}>
+      <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
+        <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+          <Dialog.Title className="text-xl font-bold text-gray-800 mb-6">Edit Profile</Dialog.Title>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input 
+                id="email"
+                type="text" 
+                readOnly 
+                value={email} 
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-gray-900 bg-gray-100 cursor-not-allowed" 
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input 
+                id="username"
+                type="text" 
+                value={username} 
+                onChange={e => setUsername(e.target.value)} 
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-gray-900 placeholder-gray-500" 
+                placeholder="Enter your username"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                New Password
+              </label>
+              <input 
+                id="password"
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-gray-900 placeholder-gray-500" 
+                placeholder="Enter new password"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1">
+                Profile Image
+              </label>
+              <input 
+                id="profileImage"
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#456CBD] focus:border-[#456CBD] outline-none transition text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#456CBD] file:text-white hover:file:bg-[#3a5ba0]"
+              />
+              {previewUrl && (
+                <div className="mt-2">
+                  <img src={previewUrl.startsWith('/') ? `${location.origin}${previewUrl}` : previewUrl} alt="preview" className="w-28 h-28 object-cover rounded" />
+                </div>
+              )}
+            </div>
+            
+            {error && (
+              <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3 pt-2">
+              <button 
+                onClick={onClose} 
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <div className="flex items-center gap-2">
+                {/* Remove picture button when a profile exists */}
+                {previewUrl && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Remove profile picture?')) return;
+                      setIsLoading(true);
+                      try {
+                        const userId = localStorage.getItem('userId');
+                        if (!userId) throw new Error('Not logged in');
+                        const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profilePic: null }) });
+                        if (!res.ok) throw new Error('Failed to remove profile picture');
+                        localStorage.removeItem('profilePic');
+                        setPreviewUrl(null);
+                        onClose();
+                      } catch (e: any) {
+                        setError(e?.message || 'Failed to remove');
+                      } finally { setIsLoading(false); }
+                    }}
+                    className="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                  >
+                    Remove Picture
+                  </button>
+                )}
+
+                <button 
+                  onClick={handleSave} 
+                  disabled={isLoading}
+                  className="px-6 py-2 bg-[#456CBD] text-white rounded-lg hover:bg-[#3a5ba0] transition-colors disabled:opacity-70 flex items-center gap-2"
+                >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-3 py-2 rounded border" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">New Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-3 py-2 rounded border" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Profile Image</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-          </div>
-          {error && <div className="text-red-600">{error}</div>}
-          <div className="flex justify-end gap-2 mt-4">
-            <button onClick={onClose} className="px-3 py-1 rounded border">Cancel</button>
-            <button onClick={handleSave} disabled={isLoading} className="px-4 py-2 bg-[#456CBD] text-white rounded">
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
+        </Dialog.Panel>
       </div>
-    </div>
+    </Dialog>
   );
 }
