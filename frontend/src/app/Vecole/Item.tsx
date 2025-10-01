@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useConfirm } from "../components/ConfirmProvider";
 import { motion } from "framer-motion";
 import { apiFetch, userQuery } from "../../lib/api";
 
@@ -25,8 +26,10 @@ type Item = {
 
 export default function ItemForm() {
   // Delete all items for a bankId (all contents)
+  const confirm = useConfirm();
   const handleDeleteBank = async (bankId: string) => {
-    if (!confirm("Are you sure you want to delete all questions for this bank? This will remove all items in all contents under this bank.")) return;
+    const ok = await confirm({ title: 'Delete bank items', description: 'Are you sure you want to delete all questions for this bank? This will remove all items in all contents under this bank.' });
+    if (!ok) return;
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items?bankId=${bankId}`, { method: "DELETE" });
@@ -48,7 +51,8 @@ export default function ItemForm() {
 
   // Delete all items for a contentId
   const handleDeleteContent = async (contentId: string) => {
-    if (!confirm("Are you sure you want to delete all questions for this content?")) return;
+    const ok = await confirm({ title: 'Delete content items', description: 'Are you sure you want to delete all questions for this content?' });
+    if (!ok) return;
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items?contentId=${contentId}`, { method: "DELETE" });
@@ -249,7 +253,8 @@ export default function ItemForm() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
+    const ok = await confirm({ title: 'Delete item', description: 'Are you sure you want to delete this item?' });
+    if (!ok) return;
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/items/${id}`, { method: "DELETE" });
@@ -534,38 +539,38 @@ export default function ItemForm() {
                               </div>
                               {contentExpanded && (
                                 <div className="mt-2 space-y-2">
-                                  {itemsArr.map(it => (
-                                    <div key={it._id} className={`p-3 rounded-md border hover:shadow-sm cursor-pointer select-none`} onClick={e => { e.stopPropagation(); toggleItem(it._id); }}>
-                                      <div className="flex justify-between items-start">
-                                        <div>
-                                          <div className="font-semibold text-black">{it.question || it.name || 'Untitled'}</div>
-                                          <div className="text-sm text-black mt-1">{it.metadata?.difficulty ? `Difficulty: ${it.metadata.difficulty}` : ''} {it.metadata?.tags?.length ? `• Tags: ${it.metadata.tags.join(', ')}` : ''}</div>
+                                    {itemsArr.map(it => (
+                                      <div key={it._id} className={`p-3 rounded-md border hover:shadow-sm cursor-pointer select-none`} onClick={e => { e.stopPropagation(); toggleItem(it._id); }}>
+                                        <div className="flex flex-col sm:flex-row justify-between items-start">
+                                          <div>
+                                            <div className="font-semibold text-black">{it.question || it.name || 'Untitled'}</div>
+                                            <div className="text-sm text-black mt-1">{it.metadata?.difficulty ? `Difficulty: ${it.metadata.difficulty}` : ''} {it.metadata?.tags?.length ? `• Tags: ${it.metadata.tags.join(', ')}` : ''}</div>
+                                          </div>
+                                          <div className="mt-3 sm:mt-0 sm:ml-4 flex gap-2">
+                                            <button onClick={e => { e.stopPropagation(); handleEdit(it); }} className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors" title="Edit">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                              </svg>
+                                            </button>
+                                            <button onClick={e => { e.stopPropagation(); handleDelete(it._id); }} className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors" title="Delete">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                              </svg>
+                                            </button>
+                                          </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                          <button onClick={e => { e.stopPropagation(); handleEdit(it); }} className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors" title="Edit">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                          </button>
-                                          <button onClick={e => { e.stopPropagation(); handleDelete(it._id); }} className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors" title="Delete">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                          </button>
-                                        </div>
+                                        {expandedItemsSet.has(it._id) && (
+                                          <div className="mt-2 text-sm text-black">
+                                            {it.options && it.options.length > 0 && (
+                                              <ul className="list-disc ml-6">
+                                                {it.options.map((o, i) => <li key={i}>{o}</li>)}
+                                              </ul>
+                                            )}
+                                            {it.answer && <div className="mt-2 text-green-700 font-semibold">Answer: {it.answer}</div>}
+                                          </div>
+                                        )}
                                       </div>
-                                      {expandedItemsSet.has(it._id) && (
-                                        <div className="mt-2 text-sm text-black">
-                                          {it.options && it.options.length > 0 && (
-                                            <ul className="list-disc ml-6">
-                                              {it.options.map((o, i) => <li key={i}>{o}</li>)}
-                                            </ul>
-                                          )}
-                                          {it.answer && <div className="mt-2 text-green-700 font-semibold">Answer: {it.answer}</div>}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               )}
                             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "./ConfirmProvider";
 import { apiFetch, apiBase } from "../../lib/api";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
@@ -15,6 +16,7 @@ export default function ProfileModal({ open, onClose }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (!open) return;
@@ -178,7 +180,9 @@ export default function ProfileModal({ open, onClose }: Props) {
                 {previewUrl && (
                   <button
                     onClick={async () => {
-                      if (!confirm('Remove profile picture?')) return;
+                      const confirm = useConfirm();
+                      const ok = await confirm({ title: 'Remove profile picture', description: 'Are you sure you want to remove your profile picture?' });
+                      if (!ok) return;
                       setIsLoading(true);
                       try {
                         const userId = localStorage.getItem('userId');

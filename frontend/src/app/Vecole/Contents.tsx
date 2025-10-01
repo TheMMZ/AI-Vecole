@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { useConfirm } from "../components/ConfirmProvider";
 import { motion } from "framer-motion";
 import { apiFetch, apiBase, userQuery } from "../../lib/api";
 
@@ -161,8 +162,10 @@ export default function Contents() {
     }
   };
 
+  const confirm = useConfirm();
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    const ok = await confirm({ title: 'Delete file', description: 'Are you sure you want to delete this file?' });
+    if (!ok) return;
     setIsLoading(true);
     setError("");
     try {
@@ -280,41 +283,43 @@ export default function Contents() {
             </div>
           ) : (
             <div className="space-y-3">
-              {files.map(file => (
-                <div 
-                  key={file._id} 
-                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-center"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-red-500 text-2xl">
-                      📄
+                {files.map(file => (
+                  <div 
+                    key={file._id} 
+                    className="p-4 bg-white rounded-lg shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="text-red-500 text-2xl">
+                        📄
+                      </div>
+                      <div>
+                        <a
+                          href="#"
+                          onClick={(e) => { e.preventDefault(); openStorjFile(file.url); }}
+                          className="font-medium text-[#456CBD] hover:underline text-lg"
+                          title="Open PDF"
+                        >
+                          {file.title || file.filename}
+                        </a>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Uploaded: {new Date(file.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <a
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); openStorjFile(file.url); }}
-                        className="font-medium text-[#456CBD] hover:underline text-lg"
-                        title="Open PDF"
+                  
+                    <div className="mt-3 sm:mt-0 sm:ml-4 flex-shrink-0">
+                      <button
+                        onClick={() => handleDelete(file._id)}
+                        className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors"
+                        title="Delete"
                       >
-                        {file.title || file.filename}
-                      </a>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Uploaded: {new Date(file.uploadedAt).toLocaleDateString()}
-                      </p>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  
-                  <button
-                    onClick={() => handleDelete(file._id)}
-                    className="p-2 text-red-500 hover:bg-red-500 hover:bg-opacity-10 rounded-full transition-colors"
-                    title="Delete"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

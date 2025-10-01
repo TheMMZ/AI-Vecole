@@ -2,9 +2,14 @@
 import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
+import { useSearchParams } from 'next/navigation';
 
-const AuthCard: React.FC = () => {
-  const [isFlipped, setIsFlipped] = useState(false);
+type AuthCardProps = {};
+
+const AuthCard: React.FC<AuthCardProps> = () => {
+  const searchParams = useSearchParams();
+  const shouldRegister = searchParams?.get('register') === '1';
+  const [isFlipped, setIsFlipped] = useState(!!shouldRegister);
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);

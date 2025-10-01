@@ -1,9 +1,10 @@
+import "./globals.css";
+import ConfirmProvider from "./components/ConfirmProvider";
+
 export const metadata = {
   title: 'Vecole - AI Powered Learning',
   description: 'AI Powered Learning Platform',
 }
-
-import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -12,7 +13,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>
+        <ConfirmProvider>
+          {children}
+        </ConfirmProvider>
+      </body>
     </html>
   )
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "../components/ConfirmProvider";
 import { apiFetch, apiBase, userQuery } from "../../lib/api";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
@@ -177,8 +178,10 @@ export default function BankForm() {
     setEditingId(bank._id);
   };
 
+  const confirm = useConfirm();
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this bank?")) return;
+    const ok = await confirm({ title: 'Delete bank', description: 'Are you sure you want to delete this bank?' });
+    if (!ok) return;
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/banks/${id}`, {
@@ -351,7 +354,7 @@ export default function BankForm() {
               {banks.map(bank => (
                 <div 
                   key={bank._id} 
-                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-start"
+                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start"
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">🏦</span>
@@ -366,7 +369,7 @@ export default function BankForm() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="mt-3 sm:mt-0 sm:ml-4 flex gap-2 items-center">
                     <button
                       onClick={() => handleEdit(bank)}
                       className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors"

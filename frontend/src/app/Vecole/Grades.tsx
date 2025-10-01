@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "../components/ConfirmProvider";
 import { apiFetch } from "../../lib/api";
 import { motion } from "framer-motion";
 
@@ -85,8 +86,10 @@ export default function GradeForm() {
     setEditingId(grade._id);
   };
 
+  const confirm = useConfirm();
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this grade?")) return;
+    const ok = await confirm({ title: 'Delete grade', description: 'Are you sure you want to delete this grade?' });
+    if (!ok) return;
     try {
       setIsLoading(true);
   const response = await apiFetch(`/api/grades/${id}`, { method: "DELETE" });
@@ -217,7 +220,7 @@ export default function GradeForm() {
               {grades.map(grade => (
                 <div
                   key={grade._id}
-                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-start"
+                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start"
                 >
                   <div>
                     <h3 className="font-bold text-lg text-gray-800">{grade.name}</h3>
@@ -229,7 +232,7 @@ export default function GradeForm() {
                       <span>Updated: {new Date(grade.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="mt-3 sm:mt-0 sm:ml-4 flex gap-2">
                     {role === "admin" && (
                       <>
                         <button

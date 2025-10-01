@@ -46,7 +46,7 @@ export default function LandingPage() {
   }, [isAnimating]);
 
   const handleGetStarted = () => {
-    router.push("/AuthCard");
+    router.push("/AuthCard?register=1");
   };
 
   return (
@@ -81,7 +81,7 @@ export default function LandingPage() {
         <nav>
           <button
             className="px-6 py-2 rounded-full bg-[#456CBD] text-white font-semibold hover:bg-[#3a5ba0] transition-colors"
-            onClick={handleGetStarted}
+            onClick={() => router.push('/AuthCard')}
           >
             Get Started
           </button>
@@ -247,7 +247,7 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 mb-10">
               Join hundreds of educators saving hours each week with AI-powered assessment creation
             </p>
-            <button className="px-10 py-5 rounded-full bg-[#456CBD] text-white font-bold text-xl hover:bg-[#3a5ba0] transition-colors shadow-lg hover:shadow-xl animate-pulse">
+            <button onClick={handleGetStarted} className="px-10 py-5 rounded-full bg-[#456CBD] text-white font-bold text-xl hover:bg-[#3a5ba0] transition-colors shadow-lg hover:shadow-xl animate-pulse">
               Get Started Today - It's Free! 🎉
             </button>
             
