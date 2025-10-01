@@ -10,6 +10,7 @@ import Bank from "./Bank";
 import Item from "./Item";
 import Standard from "./Standard";
 import Contents from "./Contents";
+import ProfileModal from "../components/ProfileModal";
 
 type PageKey = "dashboard" | "grades" | "banks" | "items" | "standards" | "contents" | "users";
 
@@ -61,16 +62,18 @@ export default function VecoleRoot() {
     contents: <Contents />,
     users: <UserCenter />,
   };
+  const [isProfileOpen, setProfileOpen] = useState(false);
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <AppHeader onNavigate={(p) => {
         if (p === "grades" || p === "banks" || p === "items" || p === "standards" || p === "contents" || p === 'users') setPage(p as PageKey);
         else setPage("dashboard");
-      }} />
+      }} onOpenProfile={() => setProfileOpen(true)} />
       <main className="flex-1">
         {componentsWithNav[page]}
       </main>
       <AppFooter />
+      <ProfileModal open={isProfileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }
