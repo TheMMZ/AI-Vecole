@@ -43,6 +43,18 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     try {
       const item = new Item(req.body);
       await item.save();
+      try {
+        const Activity = require("../models/Activity").default;
+        try {
+          const auth = (req.headers as any).authorization as string | undefined;
+          const { verifyToken } = require("../utils/auth");
+          const payload = verifyToken(auth);
+          const actor = payload?.id;
+          await Activity.create({ action: `Created item "${item._id}"`, actor, icon: "✏️" });
+        } catch (inner) {
+          await Activity.create({ action: `Created item "${item._id}"`, icon: "✏️" });
+        }
+      } catch (e) {}
       reply.send(item);
     } catch (err) {
       reply.status(400).send({ message: "Failed to create item" });
@@ -173,6 +185,18 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
       const update = req.body as Partial<{ name: string; description: string }>;
       const item = await Item.findByIdAndUpdate(id, update, { new: true });
       if (!item) return reply.status(404).send({ message: "Item not found" });
+      try {
+        const Activity = require("../models/Activity").default;
+        try {
+          const auth = (req.headers as any).authorization as string | undefined;
+          const { verifyToken } = require("../utils/auth");
+          const payload = verifyToken(auth);
+          const actor = payload?.id;
+          await Activity.create({ action: `Updated item "${item._id}"`, actor, icon: "🛠️" });
+        } catch (inner) {
+          await Activity.create({ action: `Updated item "${item._id}"`, icon: "🛠️" });
+        }
+      } catch (e) {}
       reply.send(item);
     } catch (err) {
       reply.status(400).send({ message: "Failed to update item" });
@@ -184,6 +208,18 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
       const { id } = req.params as { id: string };
       const item = await Item.findByIdAndDelete(id);
       if (!item) return reply.status(404).send({ message: "Item not found" });
+      try {
+        const Activity = require("../models/Activity").default;
+        try {
+          const auth = (req.headers as any).authorization as string | undefined;
+          const { verifyToken } = require("../utils/auth");
+          const payload = verifyToken(auth);
+          const actor = payload?.id;
+          await Activity.create({ action: `Deleted item "${item._id}"`, actor, icon: "🗑️" });
+        } catch (inner) {
+          await Activity.create({ action: `Deleted item "${item._id}"`, icon: "🗑️" });
+        }
+      } catch (e) {}
       reply.send({ success: true });
     } catch (err) {
       reply.status(400).send({ message: "Failed to delete item" });

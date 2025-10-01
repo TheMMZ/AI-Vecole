@@ -65,6 +65,18 @@ async function contentRoutes(fastify: FastifyInstance) {
     }
     const content = new Content({ title, fileUrl, uploadedBy });
     await content.save();
+    try {
+      const Activity = require("../models/Activity").default;
+      try {
+        const auth = (req.headers as any).authorization as string | undefined;
+        const { verifyToken } = require("../utils/auth");
+        const payload = verifyToken(auth);
+        const actor = payload?.id;
+        await Activity.create({ action: `Uploaded content "${title}"`, actor, icon: "📁" });
+      } catch (inner) {
+        await Activity.create({ action: `Uploaded content "${title}"`, icon: "📁" });
+      }
+    } catch (e) {}
     reply.send({
       _id: content._id,
       filename: content.title,
@@ -137,6 +149,18 @@ async function contentRoutes(fastify: FastifyInstance) {
 
       const content = new Content(docData);
       await content.save();
+      try {
+        const Activity = require("../models/Activity").default;
+        try {
+          const auth = (req.headers as any).authorization as string | undefined;
+          const { verifyToken } = require("../utils/auth");
+          const payload = verifyToken(auth);
+          const actor = payload?.id;
+          await Activity.create({ action: `Uploaded content "${filename}"`, actor, icon: "📁" });
+        } catch (inner) {
+          await Activity.create({ action: `Uploaded content "${filename}"`, icon: "📁" });
+        }
+      } catch (e) {}
       return reply.send({ _id: content._id, filename: content.title, url: content.fileUrl, uploadedAt: content.createdAt, storageKey: key });
     } catch (err: any) {
       // Log full error server-side for debugging, but return a safe message to client
