@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createPortal } from 'react-dom';
 
 type ConfirmOptions = {
   title?: string;
@@ -38,16 +39,25 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
       {/* Modal */}
       {state.open && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 mx-4">
-            <h3 className="text-lg font-bold text-gray-800">{state.opts.title || "Confirm"}</h3>
-            {state.opts.description && <p className="text-sm text-gray-600 mt-2">{state.opts.description}</p>}
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => handleClose(false)} className="px-4 py-2 rounded bg-gray-100">{state.opts.cancelText || 'Cancel'}</button>
-              <button onClick={() => handleClose(true)} className="px-4 py-2 rounded bg-[#456CBD] text-white">{state.opts.confirmText || 'Confirm'}</button>
+        (() => {
+          // Render modal into body to avoid stacking-context issues
+          const modal = (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 mx-4">
+                <h3 className="text-lg font-bold text-gray-800">{state.opts.title || "Confirm"}</h3>
+                {state.opts.description && <p className="text-sm text-gray-600 mt-2">{state.opts.description}</p>}
+                <div className="mt-6 flex justify-end gap-3">
+                  <button onClick={() => handleClose(false)} className="px-4 py-2 rounded bg-gray-100">{state.opts.cancelText || 'Cancel'}</button>
+                  <button onClick={() => handleClose(true)} className="px-4 py-2 rounded bg-[#456CBD] text-white">{state.opts.confirmText || 'Confirm'}</button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+          if (typeof document !== 'undefined') {
+            return createPortal(modal, document.body);
+          }
+          return modal;
+        })()
       )}
     </ConfirmContext.Provider>
   );

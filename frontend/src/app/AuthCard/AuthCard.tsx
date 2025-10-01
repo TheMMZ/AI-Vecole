@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type AuthCardProps = {};
 
@@ -15,13 +15,28 @@ const AuthCard: React.FC<AuthCardProps> = () => {
     setIsFlipped(!isFlipped);
   };
 
+  const router = useRouter();
+
+  const handleReturnToMain = () => {
+    // Navigate to landing page
+    router.push('/');
+  };
+
   return (
     <div className="perspective-1000 w-full max-w-md h-[540px] mx-auto">
-      <div
-        className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
-      >
-        <LoginForm onFlip={handleFlip} />
-        <RegisterForm onFlip={handleFlip} />
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className={`relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
+        >
+          <LoginForm onFlip={handleFlip} />
+          <RegisterForm onFlip={handleFlip} />
+        </div>
+        <button
+          onClick={handleReturnToMain}
+          className="text-sm text-gray-600 hover:text-gray-800 underline"
+        >
+          Return to main page
+        </button>
       </div>
     </div>
   );
