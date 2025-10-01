@@ -31,28 +31,18 @@ export default function AuthCardPage() {
       const current = seqRef.current ?? 0;
       const isForward = incoming != null ? incoming > current : true;
 
-      (async () => {
-        let ok = false;
-        try {
-          ok = await confirm({ title: 'Leave Auth', description: 'Do you want to leave this page?' });
-        } catch (e) {
-          // fallback to native confirm if modal unavailable
-          ok = window.confirm('Do you want to leave this page?');
-        }
-
-        if (!ok) {
-          handlingRef.current = true;
-          try {
-            if (isForward) history.go(-1);
-            else history.go(1);
-          } catch (e) {
-            try { history.pushState({ auth_seq: seqRef.current }, '', window.location.href); } catch (e) { /* ignore */ }
-          }
-        } else {
-          // allow navigation: update current seq
-          if (incoming != null) seqRef.current = incoming;
-        }
-      })();
+      // Immediately revert any forward/back navigation without prompting
+      handlingRef.current = true;
+      try {
+        if (isForward) history.go(-1);
+        else history.go(1);
+      } catch (e) {
+        try { history.pushState({ auth_seq: seqRef.current }, '', window.location.href); } catch (e) { /* ignore */ }
+      } finally {
+        // release the lock shortly after
+        setTimeout(() => { handlingRef.current = false; }, 50);
+      }
+      return;
     };
 
     window.addEventListener('popstate', onPop);

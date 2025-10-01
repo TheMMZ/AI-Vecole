@@ -180,21 +180,30 @@ export default function ProfileModal({ open, onClose }: Props) {
                 {previewUrl && (
                   <button
                     onClick={async () => {
-                      const confirm = useConfirm();
-                      const ok = await confirm({ title: 'Remove profile picture', description: 'Are you sure you want to remove your profile picture?' });
+                      let ok = false;
+                      try {
+                        ok = await confirm({ title: 'Remove profile picture', description: 'Are you sure you want to remove your profile picture?' });
+                      } catch (e) {
+                        ok = window.confirm('Remove profile picture?');
+                      }
                       if (!ok) return;
                       setIsLoading(true);
                       try {
                         const userId = localStorage.getItem('userId');
                         if (!userId) throw new Error('Not logged in');
                         const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profilePic: null }) });
-                        if (!res.ok) throw new Error('Failed to remove profile picture');
+                        if (!res.ok) {
+                          const body = await res.json().catch(() => ({}));
+                          throw new Error(body.error || `Failed to remove profile picture (status ${res.status})`);
+                        }
                         localStorage.removeItem('profilePic');
                         setPreviewUrl(null);
                         onClose();
                         try { window.location.reload(); } catch (e) { }
                       } catch (e: any) {
-                        setError(e?.message || 'Failed to remove');
+                        setError(String(e?.message || 'Failed to remove'));
+                        // also log to console for deployed debugging
+                        try { console.error('Remove profile pic error:', e); } catch (e) {}
                       } finally { setIsLoading(false); }
                     }}
                     className="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
