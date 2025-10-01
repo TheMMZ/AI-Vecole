@@ -328,14 +328,14 @@ export default function UserCenter() {
               {users.map(user => (
                 <div 
                   key={user._id} 
-                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex justify-between items-start"
+                  className="p-4 bg-white rounded-lg shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 w-full">
                     <span className="text-2xl">👤</span>
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-800">{user.username || user.email.split('@')[0]}</h3>
-                      <p className="text-gray-600 mt-1">{user.email}</p>
-                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-lg text-gray-800 truncate">{user.username || user.email.split('@')[0]}</h3>
+                      <p className="text-gray-600 mt-1 break-words text-sm">{user.email}</p>
+                      <div className="flex gap-4 mt-2 text-sm text-gray-500 flex-wrap">
                         <span>Role: {user.role}</span>
                         <span>Status: {user.suspended ? 'Suspended' : 'Active'}</span>
                         {user.suspended && user.suspendedUntil && (
@@ -344,7 +344,7 @@ export default function UserCenter() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center mt-3 md:mt-0 md:ml-4">
                     <button
                       onClick={() => startEdit(user)}
                       className="p-2 text-[#456CBD] hover:bg-[#456CBD] hover:bg-opacity-10 rounded-full transition-colors"
