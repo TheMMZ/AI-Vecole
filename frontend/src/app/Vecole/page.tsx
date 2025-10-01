@@ -78,14 +78,15 @@ export default function VecoleRoot() {
             } catch (e) { /* ignore */ }
 
             // otherwise, if there is a history entry, go back; else go to root
-            setTimeout(() => {
-              try {
-                if (history.length > 1) history.back();
-                else window.location.href = '/';
-              } catch (e) {
-                try { window.location.href = '/'; } catch (e) { /* ignore */ }
+            try {
+              if (history.length > 1) {
+                history.back();
+              } else {
+                window.location.href = '/';
               }
-            }, 100);
+            } catch (e) {
+              try { window.location.href = '/'; } catch (e) { /* ignore */ }
+            }
           }
         } catch (err) {
           // ignore
