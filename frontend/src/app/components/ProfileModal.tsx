@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, apiBase } from "../../lib/api";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 
@@ -82,10 +82,11 @@ export default function ProfileModal({ open, onClose }: Props) {
         throw new Error(body.error || 'Failed to update profile');
       }
       const updated = await res.json();
-      // update localStorage and close
-      localStorage.setItem('username', updated.username);
-      if (updated.profilePic) localStorage.setItem('profilePic', updated.profilePic);
-      onClose();
+  // update localStorage and close, then refresh so header updates
+  localStorage.setItem('username', updated.username);
+  if (updated.profilePic) localStorage.setItem('profilePic', updated.profilePic);
+  onClose();
+  try { window.location.reload(); } catch (e) { /* ignore */ }
     } catch (err: any) {
       setError(err?.message || 'Failed to save');
     } finally {
@@ -96,7 +97,7 @@ export default function ProfileModal({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={onClose}>
       <div className="fixed z-50 inset-0 overflow-y-auto flex items-center justify-center min-h-screen px-4 bg-black bg-opacity-30">
-  <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
+  <Dialog.Panel className="bg-white rounded-xl shadow-xl p-8 max-w-xl w-full">
           <Dialog.Title className="text-xl font-bold text-gray-800 mb-6">Edit Profile</Dialog.Title>
           
           <div className="space-y-4">
@@ -154,7 +155,7 @@ export default function ProfileModal({ open, onClose }: Props) {
               />
               {previewUrl && (
                 <div className="mt-2">
-                  <img src={previewUrl.startsWith('/') ? `${location.origin}${previewUrl}` : previewUrl} alt="preview" className="w-40 h-40 object-cover rounded" />
+                  <img src={previewUrl && previewUrl.startsWith('/storj/') ? `${apiBase()}${previewUrl}` : (previewUrl.startsWith('/') ? `${location.origin}${previewUrl}` : previewUrl)} alt="preview" className="w-40 h-40 object-cover rounded" />
                 </div>
               )}
             </div>
@@ -187,6 +188,7 @@ export default function ProfileModal({ open, onClose }: Props) {
                         localStorage.removeItem('profilePic');
                         setPreviewUrl(null);
                         onClose();
+                        try { window.location.reload(); } catch (e) { }
                       } catch (e: any) {
                         setError(e?.message || 'Failed to remove');
                       } finally { setIsLoading(false); }
