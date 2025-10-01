@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiBase } from "../../lib/api";
 
 type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents" | "users";
 type AppHeaderProps = {
@@ -19,9 +20,19 @@ const navLinks: { name: string; page: PageKey }[] = [
 export default function AppHeader({ onNavigate, onOpenProfile }: AppHeaderProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
     setIsAdmin(localStorage.getItem('role') === 'admin');
+    setProfilePic(localStorage.getItem('profilePic'));
+
+    const handleFocus = () => {
+      setUsername(localStorage.getItem("username"));
+      setIsAdmin(localStorage.getItem('role') === 'admin');
+      setProfilePic(localStorage.getItem('profilePic'));
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const handleLogout = () => {
@@ -72,16 +83,17 @@ export default function AppHeader({ onNavigate, onOpenProfile }: AppHeaderProps)
         </ul>
       </nav>
       <div className="flex items-center gap-3">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#456CBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
-        </svg>
-        <button
-          onClick={() => onOpenProfile && onOpenProfile()}
-          className="font-semibold text-gray-700 hover:underline"
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        >
-          {username}
+        <button onClick={() => onOpenProfile && onOpenProfile()} className="flex items-center gap-2 p-0" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+          {profilePic ? (
+            // Use apiBase() for cross-origin safety; if profilePic is absolute, use it directly
+            <img src={(profilePic.startsWith('/') ? `${apiBase()}${profilePic}` : profilePic)} alt="avatar" className="w-7 h-7 rounded-full object-cover" />
+          ) : (
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#456CBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
+            </svg>
+          )}
+          <span className="font-semibold text-gray-700 hover:underline">{username}</span>
         </button>
         <button
           onClick={handleLogout}
