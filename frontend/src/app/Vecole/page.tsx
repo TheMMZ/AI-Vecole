@@ -23,16 +23,7 @@ export default function VecoleRoot() {
   const leaveConfirmRef = useRef(true);
 
   useEffect(() => {
-    // beforeunload: shows confirm dialog on refresh/close
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!leaveConfirmRef.current) return;
-      e.preventDefault();
-      // Chrome requires setting returnValue to show the prompt
-      e.returnValue = '';
-      return '';
-    };
-
-    // popstate: handle browser back/forward navigation
+    // popstate: handle browser back/forward navigation (leaving confirmation)
     const handlePopState = (e: PopStateEvent) => {
       if (!leaveConfirmRef.current) return;
       const leave = window.confirm('Are you sure you want to leave Vecole?');
@@ -42,13 +33,11 @@ export default function VecoleRoot() {
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
     // ensure there's an initial history state so popstate can be controlled
     if (!history.state) history.replaceState(null, '', window.location.href);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
