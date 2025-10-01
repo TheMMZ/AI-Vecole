@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 type PageKey = "home" | "Vecole" | "grades" | "items" | "banks" | "standards" | "contents" | "users";
 type AppHeaderProps = {
   onNavigate?: (page: PageKey) => void;
+  onOpenProfile?: () => void;
 };
 
 const navLinks: { name: string; page: PageKey }[] = [
@@ -15,7 +16,7 @@ const navLinks: { name: string; page: PageKey }[] = [
   { name: "Contents", page: "contents" },
 ];
 
-export default function AppHeader({ onNavigate }: AppHeaderProps) {
+export default function AppHeader({ onNavigate, onOpenProfile }: AppHeaderProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
@@ -75,7 +76,13 @@ export default function AppHeader({ onNavigate }: AppHeaderProps) {
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
         </svg>
-        <span className="font-semibold text-gray-700">{username}</span>
+        <button
+          onClick={() => onOpenProfile && onOpenProfile()}
+          className="font-semibold text-gray-700 hover:underline"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          {username}
+        </button>
         <button
           onClick={handleLogout}
           className="ml-2 px-3 py-1 rounded bg-primary text-white font-semibold hover:bg-secondary transition-colors"
