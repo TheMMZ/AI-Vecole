@@ -22,7 +22,17 @@ export default async function standardsRoutes(fastify: FastifyInstance) {
       try {
         // import Activity lazily to avoid circular deps
         const Activity = require("../models/Activity").default;
-        await Activity.create({ action: `Created standard "${standard.name}"`, icon: "🎯" });
+        // try to resolve actor from Authorization header
+        try {
+          const auth = (req.headers as any).authorization as string | undefined;
+          const { verifyToken } = require("../utils/auth");
+          const payload = verifyToken(auth);
+          const actor = payload?.id;
+          await Activity.create({ action: `Created standard "${standard.name}"`, actor, icon: "🎯" });
+        } catch (inner) {
+          // fall back to creating activity without actor
+          await Activity.create({ action: `Created standard "${standard.name}"`, icon: "🎯" });
+        }
       } catch (e) {
         console.warn("Failed to record activity for standard creation", e);
       }

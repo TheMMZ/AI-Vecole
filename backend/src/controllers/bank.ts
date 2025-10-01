@@ -48,7 +48,15 @@ export async function createBank(req: FastifyRequest, reply: FastifyReply) {
     await bank.save();
     try {
       const Activity = require("../models/Activity").default;
-      await Activity.create({ action: `Created bank "${bank.title}"`, icon: "🏦" });
+      try {
+        const auth = (req.headers as any).authorization as string | undefined;
+        const { verifyToken } = require("../utils/auth");
+        const payload = verifyToken(auth);
+        const actor = payload?.id;
+        await Activity.create({ action: `Created bank "${bank.title}"`, actor, icon: "🏦" });
+      } catch (inner) {
+        await Activity.create({ action: `Created bank "${bank.title}"`, icon: "🏦" });
+      }
     } catch (e) {
       console.warn("Failed to record activity for bank creation", e);
     }

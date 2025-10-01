@@ -17,7 +17,15 @@ export async function createGrade(req: FastifyRequest, reply: FastifyReply) {
     const grade = new Grade(req.body);
     await grade.save();
     try {
-      await Activity.create({ action: `Created grade "${grade.name}"`, actor: undefined, icon: "🎓" });
+      try {
+        const auth = (req.headers as any).authorization as string | undefined;
+        const { verifyToken } = require("../utils/auth");
+        const payload = verifyToken(auth);
+        const actor = payload?.id;
+        await Activity.create({ action: `Created grade "${grade.name}"`, actor, icon: "🎓" });
+      } catch (inner) {
+        await Activity.create({ action: `Created grade "${grade.name}"`, icon: "🎓" });
+      }
     } catch (e) {
       console.warn('Failed to record activity for grade creation', e);
     }
