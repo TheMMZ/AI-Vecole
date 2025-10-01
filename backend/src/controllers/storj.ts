@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const s3 = new S3Client({
@@ -64,5 +64,18 @@ export async function getDownloadUrl(req: FastifyRequest, reply: FastifyReply) {
   } catch (err) {
     req.log?.error?.(err);
     return reply.status(500).send({ error: 'Could not generate download URL' });
+  }
+}
+
+export async function deleteObject(key: string) {
+  if (!key) return;
+  try {
+    const cmd = new DeleteObjectCommand({ Bucket: process.env.STORJ_BUCKET, Key: key });
+    await s3.send(cmd);
+    return true;
+  } catch (err) {
+    // log and continue
+    console.warn('Failed to delete storj object', key, err);
+    return false;
   }
 }
