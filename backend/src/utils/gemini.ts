@@ -17,14 +17,20 @@ export type GeminiQuestion = {
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-export async function generateQuestionsWithGemini(pdfText: string): Promise<GeminiResult> {
+export async function generateQuestionsWithGemini(
+  pdfText: string,
+  gradeName: string = '',
+  gradeDescription: string = '',
+  standardName: string = '',
+  standardDescription: string = ''
+): Promise<GeminiResult> {
   if (!GEMINI_API_KEY) {
     console.error("Gemini API key is missing.");
     return { raw: "", questions: [] };
   }
   let allQuestions: GeminiQuestion[] = [];
   let rawAccum = "";
-  const prompt = `Generate exam questions (MCQ or True/False) from the following text: ${pdfText}.
+  const prompt = `Generate exam questions (MCQ or True/False) from the following text: ${pdfText}. Use the following contextual hints only to tailor the scope, vocabulary and difficulty of the questions (do NOT treat them as topics to ask about): Grade: ${gradeName} (${gradeDescription}). Standard: ${standardName} (${standardDescription}). IMPORTANT: do NOT generate questions that ask about the Grade or the Standard themselves (for example: "What is Grade X?" or "Define this Standard?"). Focus all questions on the PDF content, but make them appropriate for the given Grade and aligned with the Standard.
 Return ONLY a valid JSON array of at least 1 question object. Do not return empty arrays. Do not include any text before or after the JSON. Do not add explanations, comments, or extra words. Each object must have:
 - \"type\": \"MCQ\" or \"TrueFalse\"
 - \"question\": string

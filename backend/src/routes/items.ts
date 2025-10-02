@@ -117,12 +117,52 @@ export default async function itemsRoutes(fastify: FastifyInstance) {
     console.error('[PDF EXTRACTION] Error extracting text:', err);
     return reply.status(500).send({ message: 'Failed to extract PDF text' });
   }
-    // 4. Send pdfText to GROQ API to generate questions
+    // 4. Send pdfText to Gemini API to generate questions
     let generated: any = { raw: "", questions: [] };
     try {
-  generated = await generateQuestionsWithGemini(pdfText);
+      // Load bank to find associated grade/standard names/descriptions
+      let gradeName = '';
+      let gradeDescription = '';
+      let standardName = '';
+      let standardDescription = '';
+      if (bankId) {
+        try {
+          const Bank = require('../models/Bank').default;
+          const Grade = require('../models/Grade').default;
+          const Standard = require('../models/Standard').default;
+          const bankDoc = await Bank.findById(bankId).lean();
+          if (bankDoc) {
+            // use first grade/standard if multiple referenced
+            const firstGradeId = (bankDoc.gradeIds && bankDoc.gradeIds[0]) || null;
+            const firstStandardId = (bankDoc.standardIds && bankDoc.standardIds[0]) || null;
+            if (firstGradeId) {
+              try {
+                const g = await Grade.findById(firstGradeId).lean();
+                if (g) {
+                  gradeName = g.name || '';
+                  gradeDescription = g.description || '';
+                }
+              } catch (e) {}
+            }
+            if (firstStandardId) {
+              try {
+                const s = await Standard.findById(firstStandardId).lean();
+                if (s) {
+                  // Standard model uses 'code' and 'description'
+                  standardName = s.code || '';
+                  standardDescription = s.description || '';
+                }
+              } catch (e) {}
+            }
+          }
+        } catch (e) {
+          // ignore failures to fetch bank/grade/standard; proceed without contextual hints
+        }
+      }
+
+      generated = await generateQuestionsWithGemini(pdfText, gradeName, gradeDescription, standardName, standardDescription);
     } catch (err) {
-  return reply.status(500).send({ message: "Gemini API error" });
+      return reply.status(500).send({ message: "Gemini API error" });
     }
 
     // Save raw model output for auditing/debugging. If raw is empty, store an explanatory fallback
